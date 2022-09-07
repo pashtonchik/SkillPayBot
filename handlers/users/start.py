@@ -215,8 +215,9 @@ async def acceptPayment(call: types.CallbackQuery, callback_data=dict, state=FSM
 
 @dp.message_handler(content_types=['photo'], state=Activity.acceptPayment)
 async def getPhoto(message: types.Message, state=FSMContext):
-    id = await state.get_data()['id']
+    id = await state.get_data()
     print(id['id'])
+    id = id['id']
     fileName = f'../../media/{id}_{message.from_user.id}.png'
     await message.photo[-1].download(fileName)
     # send_message = f'https://bitzlato.bz/api/p2p/trade/{tradeId}/chat/'

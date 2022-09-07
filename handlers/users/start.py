@@ -1,8 +1,8 @@
 from cgitb import text
+from email import header
 from wave import Wave_write
 from aiogram import types
 from aiogram.dispatcher.filters.builtin import CommandStart
-import data
 from keyboards.inline.mainMenu import kb_menu_main, kb_menu_job, kb_accept_order, kb_accept_payment
 from loader import dp
 import time
@@ -13,6 +13,9 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 import datetime
 import time
 import random
+from states.activity.activity_state import Activity
+from aiogram.dispatcher import FSMContext
+from aiogram.dispatcher.filters import state
 
 import requests
 from jose import jws
@@ -67,7 +70,6 @@ async def job(call: types.CallbackQuery):
 
 @dp.callback_query_handler(text='Уйти со смены')
 async def startJob(call: types.CallbackQuery):
-    
     body = {
         'tg_id' : call.from_user.id
     }
@@ -129,7 +131,7 @@ async def startJob(call: types.CallbackQuery):
 
 
 @dp.callback_query_handler(trade_cb.filter(action=['accept_trade']))
-async def acceptOrder(call: types.CallbackQuery, callback_data: dict):
+async def acceptOrder(call: types.CallbackQuery, callback_data: dict, state=FSMContext):
     URL_DJANGO = 'http://194.58.92.160:8000/'
     id = callback_data['id']
     get_trade_info = requests.get(URL_DJANGO + f'api/trade/detail/{id}')
@@ -163,17 +165,18 @@ async def acceptOrder(call: types.CallbackQuery, callback_data: dict):
             
             url = f'https://bitzlato.com/api/p2p/trade/{id}'
 
-            req_change_type = requests.post(url, headers=headers, proxies=proxy, json=data)
-            if (req_change_type.status_code == 200):
-                await call.message.edit_text(f'''
+            # req_change_type = requests.post(url, headers=headers, proxies=proxy, json=data)
+            # if (req_change_type.status_code == 200):
+            await call.message.edit_text(f'''
     Переведите {get_current_info.json()['trade']['currency_amount']} {get_current_info.json()['trade']['currency']}
     Комментарий: {get_current_info.json()['trade']['details']}
     Реквизиты: {get_current_info.json()['trade']['counterDetails']} {get_current_info.json()['paymethod_description']}
 
 После перевода нажмите кнопку "Оплатил"
 ''', reply_markup=kb_accept_payment)
-            else:
-                await call.message.answer('Произошла ошибка')
+            await Activity.acceptOrder.set()
+            # else:
+                # await call.message.answer('Произошла ошибка')
         else:
             await call.answer("Заявка уже в работе", show_alert=True)
             await call.message.delete()
@@ -182,17 +185,61 @@ async def acceptOrder(call: types.CallbackQuery, callback_data: dict):
         await call.message.delete()
     
 
-@dp.callback_query_handler(trade_cb.filter(action=['accept_payment']))
-async def isPayment(call: types.CallbackQuery, callback_data=dict):
+@dp.callback_query_handler(trade_cb.filter(action=['accept_payment']), state=Activity.acceptOrder)
+async def acceptPayment(call: types.CallbackQuery, callback_data=dict, state=FSMContext):
     id = str(callback_data['id'])
+    URL_DJANGO = 'http://194.58.92.160:8000/'
     
-    await call.message.answer('ПАШОК, ТЫ ТОЧНО ОПЛАТИЛ БЛЯ?????А?????? СУЧКА МОЯ.')
+    get_current_info = requests.get(URL_DJANGO + f'api/trade/detail/{id}')
 
 
-@dp.message_handler(content_types=['photo'])
-async def handle_photos(message: types.Message):
-    await message.reply('Принято!')
+    headers = authorization(get_current_info.json()['user']['key'], get_current_info.json()['user']['email'])
 
+    proxy = get_current_info.json()['user']['proxy']
+    
+    data = {
+        'type': 'payment'
+    }
+    
+    url = f'https://bitzlato.bz/api/p2p/trade/{id}'
+
+    # req_change_type = requests.post(url, headers=headers, proxies=proxy, json=data)
+    
+    await call.message.answer('Пришлите чек о переводе в виде изображения.')
+    
+    # if (req_change_type.status_code == 200):
+    #     await call.message.answer('Пришлите чек о переводе в виде изображения.')
+    #     await state.set_data(id=id)
+    #     await Activity.acceptPayment.set()
+    # else:
+    #     await call.message.answer('Произошла ошибка в боте, сообщените админу')
+
+@dp.message_handler(content_types=['photo'], state=Activity.acceptPayment)
+async def getPhoto(message: types.Message, state=FSMContext):
+    id = await state.get_data()
+    # await message.photo[-1].download('test.jpg')
+    # send_message = f'https://bitzlato.bz/api/p2p/trade/{tradeId}/chat/'
+    # headers = authorization()
+    # data_message = {
+    #     'message' : 'Оплатил.',
+    #     'payload' : {
+    #         'message' : 'string'
+    #     }
+    # }
+    # send_message_req = requests.post(send_message, headers=header, proxies=proxy, json=data_message)
+    # url = f'https://bitzlato.bz/api2/p2p/trade/{id}/chat/sendfile'
+    
+    # data = {
+    #     'mime_type': 'image/png',
+    #     'name': 'Check.png'
+    # }
+    # files = {'file': open(filename, 'rb')}
+    
+    # headers = authorization()
+    
+    # r = requests.post(url, headers=headers, proxies=proxies, files=files)
+
+    await message.reply('Чек принят! Сделка завершена, ожидайте следующую.')
 
 @dp.callback_query_handler(text='Назад')
 async def back(call: types.CallbackQuery):

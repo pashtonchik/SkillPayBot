@@ -209,7 +209,7 @@ async def acceptPayment(call: types.CallbackQuery, callback_data=dict, state=FSM
     
     # if (req_change_type.status_code == 200):
     #     await call.message.answer('Пришлите чек о переводе в виде изображения.')
-    await state.set_data(id=id)
+    await state.update_data(id=id)
     await Activity.acceptPayment.set()
     # else:
     #     await call.message.answer('Произошла ошибка в боте, сообщените админу')

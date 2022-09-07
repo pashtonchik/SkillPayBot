@@ -210,13 +210,14 @@ async def acceptPayment(call: types.CallbackQuery, callback_data=dict, state=FSM
     # if (req_change_type.status_code == 200):
     #     await call.message.answer('Пришлите чек о переводе в виде изображения.')
     #     await state.set_data(id=id)
-    #     await Activity.acceptPayment.set()
+    await Activity.acceptPayment.set()
     # else:
     #     await call.message.answer('Произошла ошибка в боте, сообщените админу')
 
 @dp.message_handler(content_types=['photo'], state=Activity.acceptPayment)
 async def getPhoto(message: types.Message, state=FSMContext):
     id = await state.get_data()
+    print(id)
     # await message.photo[-1].download('test.jpg')
     # send_message = f'https://bitzlato.bz/api/p2p/trade/{tradeId}/chat/'
     # headers = authorization()

@@ -111,17 +111,16 @@ async def acceptOrder(call: types.CallbackQuery, callback_data: dict):
     URL_DJANGO = 'http://194.58.92.160:8000/'
     id = callback_data['id']
     get_trade_info = requests.get(f'http://194.58.92.160:8000/api/trade/detail/{id}')
-    print(call.message.from_user.id, call.from_user.id)
     if (get_trade_info.json()['trade']['agent'] == None):
         data = {
             'id' : str(id),
-            'agent' : str(call.message.from_user.id)
+            'agent' : str(call.from_user.id)
         }
         set_agent_trade = requests.post(f'http://194.58.92.160:8000/api/update/trade/', json=data)
 
         get_current_info = requests.get(f'http://194.58.92.160:8000/api/trade/detail/{id}')
         print(set_agent_trade.status_code, set_agent_trade.text)
-        if (get_current_info.json()['trade']['agent'] == call.message.from_user.id):
+        if (get_current_info.json()['trade']['agent'] == call.from_user.id):
             await call.answer('Вы успешно взяли заявку в работу!')
             await call.message.edit_text(f'''
 Переведите {get_current_info.json()['currency_amount']} {get_current_info.json()['currency']}

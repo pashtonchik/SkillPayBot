@@ -119,7 +119,7 @@ async def acceptOrder(call: types.CallbackQuery, callback_data: dict):
         set_agent_trade = requests.post(f'http://194.58.92.160:8000/api/update/trade/', json=data)
 
         get_current_info = requests.get(f'http://194.58.92.160:8000/api/trade/detail/{id}')
-        print(set_agent_trade.status_code, set_agent_trade.text)
+        print(get_current_info.json()['trade']['agent'])
         if (get_current_info.json()['trade']['agent'] == call.from_user.id):
             await call.answer('Вы успешно взяли заявку в работу!')
             await call.message.edit_text(f'''

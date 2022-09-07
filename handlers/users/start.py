@@ -114,8 +114,8 @@ async def acceptOrder(call: types.CallbackQuery, callback_data: dict):
     
     if (get_trade_info.json()['trade']['agent'] == None):
         data = {
-            'id' : id,
-            'agent' : call.message.from_user.id
+            'id' : str(id),
+            'agent' : str(call.message.from_user.id)
         }
         set_agent_trade = requests.post(f'http://194.58.92.160:8000/api/update/trade/', json=data)
 

@@ -111,7 +111,7 @@ async def acceptOrder(call: types.CallbackQuery, callback_data: dict):
     URL_DJANGO = 'http://194.58.92.160:8000/'
     id = callback_data['id']
     get_trade_info = requests.get(f'http://194.58.92.160:8000/api/trade/detail/{id}')
-    
+    print(call.message.from_user.id, call.from_user.id)
     if (get_trade_info.json()['trade']['agent'] == None):
         data = {
             'id' : str(id),

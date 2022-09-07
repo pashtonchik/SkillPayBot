@@ -218,7 +218,7 @@ async def getPhoto(message: types.Message, state=FSMContext):
     id = await state.get_data()
     print(id['id'])
     id = id['id']
-    fileName = f'../../media/{id}_{message.from_user.id}.png'
+    fileName = f'/root/SkillPayBot/media/{id}_{message.from_user.id}.png'
     await message.photo[-1].download(fileName)
     # send_message = f'https://bitzlato.bz/api/p2p/trade/{tradeId}/chat/'
     # headers = authorization()

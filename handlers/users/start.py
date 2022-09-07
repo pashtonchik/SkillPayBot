@@ -101,7 +101,6 @@ async def startJob(call: types.CallbackQuery):
 
 @dp.callback_query_handler(text='Встать на смену')
 async def startJob(call: types.CallbackQuery):
-    print("124455")
     body = {
         'tg_id' : call.from_user.id
     }
@@ -216,9 +215,10 @@ async def acceptPayment(call: types.CallbackQuery, callback_data=dict, state=FSM
 
 @dp.message_handler(content_types=['photo'], state=Activity.acceptPayment)
 async def getPhoto(message: types.Message, state=FSMContext):
-    id = await state.get_data()
-    print(id)
-    # await message.photo[-1].download('test.jpg')
+    id = await state.get_data()['id']
+    print(id['id'])
+    fileName = f'../../media/{id}_{message.from_user.id}.png'
+    await message.photo[-1].download(fileName)
     # send_message = f'https://bitzlato.bz/api/p2p/trade/{tradeId}/chat/'
     # headers = authorization()
     # data_message = {
@@ -234,13 +234,29 @@ async def getPhoto(message: types.Message, state=FSMContext):
     #     'mime_type': 'image/png',
     #     'name': 'Check.png'
     # }
-    # files = {'file': open(filename, 'rb')}
+    # files = {'file': open(fileName, 'rb')}
     
     # headers = authorization()
     
     # r = requests.post(url, headers=headers, proxies=proxies, files=files)
 
-    await message.reply('Чек принят! Сделка завершена, ожидайте следующую.')
+    
+    body = {
+        'tg_id': message.from_user.id,
+        'options': {
+            'is_working_now': False,
+            'is_instead': True,
+        }
+    }
+
+    change_status_agent = requests.post(URL + 'edit_agent_status/', json=body)
+
+    if (change_status_agent.status_code == 200):
+        await message.reply('Чек принят! Сделка завершена, ожидайте следующую.')
+    else:
+        await message.answer('Произошла ошибка, свяжитесь с админом.')
+
+    await state.finish()
 
 @dp.callback_query_handler(text='Назад')
 async def back(call: types.CallbackQuery):

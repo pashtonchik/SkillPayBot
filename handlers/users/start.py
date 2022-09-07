@@ -1,4 +1,5 @@
 from cgitb import text
+from wave import Wave_write
 from aiogram import types
 from aiogram.dispatcher.filters.builtin import CommandStart
 import data
@@ -8,11 +9,32 @@ import time
 import requests
 import json
 from aiogram.utils.callback_data import CallbackData
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+import datetime
+import time
+import random
+
+import requests
+from jose import jws
+from jose.constants import ALGORITHMS
 
 
 trade_cb = CallbackData("trade", "id", "action")
 
 URL = 'http://194.58.92.160:8000/api/'
+
+def authorization(key, email_bz):
+    dt = datetime.datetime.now()
+    ts = time.mktime(dt.timetuple())
+    claims = {
+        "email": email_bz,
+        "aud": "usr",
+        "iat": int(ts),
+        "jti": hex(random.getrandbits(64))
+    }
+    token = jws.sign(claims, key, headers={"kid": "1"}, algorithm=ALGORITHMS.ES256)
+    return {'Authorization': "Bearer " + token}
+
 
 @dp.message_handler(CommandStart())
 async def bot_start(message: types.Message):
@@ -110,22 +132,48 @@ async def startJob(call: types.CallbackQuery):
 async def acceptOrder(call: types.CallbackQuery, callback_data: dict):
     URL_DJANGO = 'http://194.58.92.160:8000/'
     id = callback_data['id']
-    get_trade_info = requests.get(f'http://194.58.92.160:8000/api/trade/detail/{id}')
+    get_trade_info = requests.get(URL_DJANGO + f'api/trade/detail/{id}')
     if (get_trade_info.json()['trade']['agent'] == None):
         data = {
             'id' : str(id),
             'agent' : str(call.from_user.id)
         }
-        set_agent_trade = requests.post(f'http://194.58.92.160:8000/api/update/trade/', json=data)
+        set_agent_trade = requests.post(URL_DJANGO + f'api/update/trade/', json=data)
 
-        get_current_info = requests.get(f'http://194.58.92.160:8000/api/trade/detail/{id}')
-        print(get_current_info.json()['trade']['agent'])
-        if (get_current_info.json()['trade']['agent'] == call.from_user.id):
-            await call.answer('Вы успешно взяли заявку в работу!')
-            await call.message.edit_text(f'''
-Переведите {get_current_info.json()['currency_amount']} {get_current_info.json()['currency']}
-Комментарий: {get_current_info.json()['details']}
-Реквизиты: {get_current_info.json()['counterDetails']}''')
+        get_current_info = requests.get(URL_DJANGO + f'api/trade/detail/{id}')
+
+        if (get_current_info.json()['trade']['agent'] == str(call.from_user.id)):
+            await call.answer('Вы успешно взяли заявку в работу!', show_alert=True)
+            kb_accept_payment = InlineKeyboardMarkup(
+                        inline_keyboard=[
+                            [
+                                InlineKeyboardButton(text='Оплатил', callback_data=trade_cb.new(id=id, action='accept_payment'))
+                            ]
+                        ]
+            )
+
+            
+            headers = authorization(get_current_info.json()['user']['key'], get_current_info.json()['user']['email'])
+
+            proxy = get_current_info.json()['user']['proxy']
+            
+            data = {
+                'type': 'confirm-trade'
+            }
+            
+            url = f'https://bitzlato.com/api/p2p/trade/{id}'
+
+            req_change_type = requests.post(url, headers=headers, proxies=proxy, json=data)
+            if (req_change_type.status_code == 200):
+                await call.message.edit_text(f'''
+    Переведите {get_current_info.json()['trade']['currency_amount']} {get_current_info.json()['trade']['currency']}
+    Комментарий: {get_current_info.json()['trade']['details']}
+    Реквизиты: {get_current_info.json()['trade']['counterDetails']} {get_current_info.json()['paymethod_description']}
+
+После перевода нажмите кнопку "Оплатил"
+''', reply_markup=kb_accept_payment)
+            else:
+                await call.message.answer('Произошла ошибка')
         else:
             await call.answer("Заявка уже в работе", show_alert=True)
             await call.message.delete()
@@ -134,10 +182,11 @@ async def acceptOrder(call: types.CallbackQuery, callback_data: dict):
         await call.message.delete()
     
 
-@dp.callback_query_handler(text='Я оплатил')
-async def isPayment(call: types.CallbackQuery):
-
-    await call.message.answer('Отправьте в чат чек об оплате.')
+@dp.callback_query_handler(trade_cb.filter(action=['accept_payment']))
+async def isPayment(call: types.CallbackQuery, callback_data=dict):
+    id = str(callback_data['id'])
+    
+    await call.message.answer('ПАШОК, ТЫ ТОЧНО ОПЛАТИЛ БЛЯ?????А?????? СУЧКА МОЯ.')
 
 
 @dp.message_handler(content_types=['photo'])

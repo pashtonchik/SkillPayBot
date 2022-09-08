@@ -134,7 +134,7 @@ async def acceptOrder(call: types.CallbackQuery, callback_data: dict, state=FSMC
     URL_DJANGO = 'http://194.58.92.160:8000/'
     id = callback_data['id']
     get_trade_info = requests.get(URL_DJANGO + f'api/trade/detail/{id}')
-    if (get_trade_info.json()['trade']['agent'] == None or str(get_trade_info.json()['trade']['agent']) == call.from_user.id):
+    if (get_trade_info.json()['trade']['agent'] == None or str(get_trade_info.json()['trade']['agent']) == str(call.from_user.id)):
         data = {
             'id' : str(id),
             'agent' : str(call.from_user.id)

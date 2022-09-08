@@ -244,7 +244,7 @@ async def getPhoto(message: types.Message, state=FSMContext):
         }
     }
     send_message_req = requests.post(send_message, headers=headers, proxies=proxy, json=data_message)
-    url = f'https://bitzlato.bz/api2/p2p/trade/{id}/chat/sendfile'
+    url = f'https://bitzlato.bz/api/p2p/trade/{id}/chat/sendfile'
     
     data = {
         'mime_type': 'image/png',

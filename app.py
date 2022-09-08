@@ -39,8 +39,7 @@ async def check_trades(dp):
                             await bot.send_message(int(i), f'''
 Новая сделка! Покупка {trade_info['trade']['cryptocurrency']} за {trade_info['trade']['currency']}
 Сумма: {trade_info['trade']['currency_amount']} {trade_info['trade']['currency']}
-Комментарий: {trade_info['trade']['details']}
-Реквизиты для перевода: {trade_info['trade']['counterDetails']} {trade_info['paymethod_description']}''', reply_markup=kb_accept_order)
+''', reply_markup=kb_accept_order)
                         except Exception as e:
                             print(e)
                             continue

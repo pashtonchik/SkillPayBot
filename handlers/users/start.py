@@ -163,10 +163,10 @@ async def acceptOrder(call: types.CallbackQuery, callback_data: dict, state=FSMC
             
             url = f'https://bitzlato.com/api/p2p/trade/{id}'
             try:
-                await call.answer('Вы успешно взяли заявку в работу!', show_alert=True)
                 req_change_type = requests.post(url, headers=headers, proxies=proxy, json=data)
                 
                 if (req_change_type.status_code == 200):
+                    await call.answer('Вы успешно взяли заявку в работу!', show_alert=True)
                     await call.message.edit_text(f'''
     Переведите {get_current_info.json()['trade']['currency_amount']} {get_current_info.json()['trade']['currency']}
     Комментарий: {get_current_info.json()['trade']['details']}

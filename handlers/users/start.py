@@ -179,7 +179,7 @@ async def acceptOrder(call: types.CallbackQuery, callback_data: dict, state=FSMC
                     await call.answer('Произошла ошибка, нажмите кнопку заново.')
             except Exception as e:
                 await call.answer('Произошла ошибка, нажмите кнопку заново.')
-                
+
         else:
             await call.answer("Заявка уже в работе", show_alert=True)
             await call.message.delete()
@@ -248,10 +248,13 @@ async def getPhoto(message: types.Message, state=FSMContext):
         'name': 'Check.png'
     }
     files = {'file': open(fileName, 'rb')}
+    data = {
+        'mime_type': 'image/png',
+        'name': 'Снимок экрана от 2022-09-06 15-41-47.png'
+    }
+    headers = authorization(key, email)
     
-    headers = authorization()
-    
-    r = requests.post(url, headers=headers, proxies=proxy, files=files)
+    r = requests.post(url, headers=headers, proxies=proxy, files=files, json=data)
 
     
     body = {

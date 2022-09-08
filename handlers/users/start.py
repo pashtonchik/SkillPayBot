@@ -218,17 +218,15 @@ async def acceptPayment(call: types.CallbackQuery, callback_data=dict, state=FSM
     except Exception as e:
         await call.message.answer('Произошла ошибка, нажмите кнопку заново.')
         
-@dp.message_handler(content_types=['photo'], state='*')
+@dp.message_handler(content_types=['photo'], state=Activity.acceptPayment)
 async def getPhoto(message: types.Message, state=FSMContext):
     URL_DJANGO = 'http://194.58.92.160:8000/'
-    # id = await state.get_data()
-    # print(id['id'])
+    id = await state.get_data()
 
-    # id = id['id']
+    id = id['id']
     
     id = '17268092'
     get_trade_detail = requests.get(URL_DJANGO + f'api/trade/detail/{id}')
-    print(get_trade_detail.json())
     key = get_trade_detail.json()['user']['key']
     proxy = get_trade_detail.json()['user']['proxy']
     email = get_trade_detail.json()['user']['email']
@@ -255,7 +253,6 @@ async def getPhoto(message: types.Message, state=FSMContext):
     headers = authorization(key, email)
     
     r = requests.post(url, headers=headers, proxies=proxy, files=files)
-    print(r.status_code, r.text)
     
     body = {
         'tg_id': message.from_user.id,
@@ -272,7 +269,7 @@ async def getPhoto(message: types.Message, state=FSMContext):
     else:
         await message.answer('Произошла ошибка, свяжитесь с админом.')
 
-    # await state.finish()
+    await state.finish()
 
 @dp.callback_query_handler(text='Назад')
 async def back(call: types.CallbackQuery):

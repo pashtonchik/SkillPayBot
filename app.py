@@ -49,9 +49,7 @@ async def check_trades(dp):
                                 'is_send': True
                             }
                     update_trade = requests.post(URL_DJANGO + 'api/update/trade/', json=data)
-                    print(update_trade.status_code, update_trade.text)
-            else:
-                print('Нету сделок')
+
         await asyncio.sleep(1)
 
 

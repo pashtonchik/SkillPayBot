@@ -221,10 +221,10 @@ async def acceptPayment(call: types.CallbackQuery, callback_data=dict, state=FSM
 @dp.message_handler(content_types=['photo'], state='*')
 async def getPhoto(message: types.Message, state=FSMContext):
     URL_DJANGO = 'http://194.58.92.160:8000/'
-    id = await state.get_data()
-    print(id['id'])
+    # id = await state.get_data()
+    # print(id['id'])
 
-    id = id['id']
+    # id = id['id']
     
     id = '17268092'
     get_trade_detail = requests.get(URL_DJANGO + f'api/trade/detail/{id}')

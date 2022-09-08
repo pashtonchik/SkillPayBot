@@ -251,14 +251,11 @@ async def getPhoto(message: types.Message, state=FSMContext):
         'name': 'Check.png'
     }
     files = {'file': open(fileName, 'rb')}
-    data = {
-        'mime_type': 'image/png',
-        'name': 'Снимок экрана от 2022-09-06 15-41-47.png'
-    }
+
     headers = authorization(key, email)
     
-    r = requests.post(url, headers=headers, proxies=proxy, files=files, json=data)
-
+    r = requests.post(url, headers=headers, proxies=proxy, files=files)
+    print(r.status_code, r.text)
     
     body = {
         'tg_id': message.from_user.id,

@@ -134,7 +134,7 @@ async def acceptOrder(call: types.CallbackQuery, callback_data: dict, state=FSMC
     URL_DJANGO = 'http://194.58.92.160:8000/'
     id = callback_data['id']
     get_trade_info = requests.get(URL_DJANGO + f'api/trade/detail/{id}')
-    if (get_trade_info.json()['trade']['agent'] == None):
+    if (get_trade_info.json()['trade']['agent'] == None or str(get_trade_info.json()['trade']['agent']) == call.from_user.id):
         data = {
             'id' : str(id),
             'agent' : str(call.from_user.id)
@@ -144,7 +144,6 @@ async def acceptOrder(call: types.CallbackQuery, callback_data: dict, state=FSMC
         get_current_info = requests.get(URL_DJANGO + f'api/trade/detail/{id}')
 
         if (get_current_info.json()['trade']['agent'] == str(call.from_user.id)):
-            await call.answer('Вы успешно взяли заявку в работу!', show_alert=True)
             kb_accept_payment = InlineKeyboardMarkup(
                         inline_keyboard=[
                             [
@@ -164,6 +163,7 @@ async def acceptOrder(call: types.CallbackQuery, callback_data: dict, state=FSMC
             
             url = f'https://bitzlato.com/api/p2p/trade/{id}'
             try:
+                await call.answer('Вы успешно взяли заявку в работу!', show_alert=True)
                 req_change_type = requests.post(url, headers=headers, proxies=proxy, json=data)
                 
                 if (req_change_type.status_code == 200):

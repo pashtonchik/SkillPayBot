@@ -12,6 +12,7 @@ from aiogram.utils.callback_data import CallbackData
 
 URL_DJANGO = 'http://194.58.92.160:8000/'
 URL_BZ = 'https://bitzlato.com/'
+
 async def check_trades(dp):
     
     while 1:
@@ -21,7 +22,7 @@ async def check_trades(dp):
         try:
             req_django = requests.get(URL_DJANGO + 'api/trades/active/')
             print(req_django.json(), req_django.status_code)
-            if (req_django.status_code == 200):
+            if req_django.status_code == 200:
                 trades = req_django.json()
                 if len(trades) > 0:
                     for trade in trades:
@@ -54,8 +55,9 @@ async def check_trades(dp):
                         update_trade = requests.post(URL_DJANGO + 'api/update/trade/', json=data)
                         print(update_trade.status_code, update_trade.text)
             await asyncio.sleep(1)
-        except ConnectTimeout:
+        except Exception as e:
             print(type(e), ' ', e)
+            continue
 
 
 async def on_startup(dispatcher):

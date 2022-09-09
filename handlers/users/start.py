@@ -21,10 +21,12 @@ import requests
 from jose import jws
 from jose.constants import ALGORITHMS
 
+from loader import bot
 
 trade_cb = CallbackData("trade", "id", "action")
 
 URL = 'http://194.58.92.160:8000/api/'
+
 
 def authorization(key, email_bz):
     dt = datetime.datetime.now()
@@ -42,7 +44,7 @@ def authorization(key, email_bz):
 @dp.message_handler(CommandStart())
 async def bot_start(message: types.Message):
     body = {
-        'tg_id' : message.from_user.id
+        'tg_id': message.from_user.id
     }
 
     r = requests.post(URL + 'get_agent_info/', json=body)
@@ -63,19 +65,21 @@ async def bot_start(message: types.Message):
 У вас нет доступа к боту, обратитесь к администратору.    
 """)
 
+
 @dp.callback_query_handler(text='Смена')
 async def job(call: types.CallbackQuery):
     print(call.from_user.id)
     await call.message.edit_text('Выберите действие', reply_markup=kb_menu_job)
 
+
 @dp.callback_query_handler(text='Уйти со смены')
 async def startJob(call: types.CallbackQuery):
     body = {
-        'tg_id' : call.from_user.id
+        'tg_id': call.from_user.id
     }
 
     r = requests.post(URL + 'get_agent_info/', json=body)
-    
+
     data = json.loads(r.text)[0]
 
     print(data)
@@ -92,25 +96,26 @@ async def startJob(call: types.CallbackQuery):
             r = requests.post(URL + 'edit_agent_status/', json=body)
 
             await call.answer("Вы закончили смену! Заявки больше вам не приходят.", show_alert=True)
-            
+
             await call.message.delete()
         else:
             await call.answer("Вы и так уже не на смене!", show_alert=True)
     else:
         await call.message.answer('Не удалось выполнить действие, свяжитесь с тех. поддержкой.')
 
+
 @dp.callback_query_handler(text='Встать на смену')
 async def startJob(call: types.CallbackQuery):
     body = {
-        'tg_id' : call.from_user.id
+        'tg_id': call.from_user.id
     }
 
     r = requests.post(URL + 'get_agent_info/', json=body)
-    
+
     data = json.loads(r.text)[0]
-    
-    if (r.status_code == 200):
-        if (data['is_instead'] == False):
+
+    if r.status_code == 200:
+        if not data['is_instead']:
             body = {
                 'tg_id': call.from_user.id,
                 'options': {
@@ -120,9 +125,20 @@ async def startJob(call: types.CallbackQuery):
             }
 
             r = requests.post(URL + 'edit_agent_status/', json=body)
-            
-            if (r.status_code == 200):
+
+            if r.status_code == 200:
                 await call.answer("Вы начали смену! Ожидайте заявки.", show_alert=True)
+
+#                 active_trades = requests.get(URL + 'trades/active/')
+#                 if active_trades.status_code == 200:
+#                     active_trades = active_trades.json()
+#                     for trade in active_trades:
+#                         req_trade_info = requests.get(URL + f'trade/detail/{trade}')
+#                         trade_info = req_trade_info.json()
+#                         await bot.send_message(453442665, f'''
+# Новая сделка! Покупка {trade_info['cryptocurrency']} за {trade_info['trade']['currency']}
+# Сумма: {trade_info['trade']['currency_amount']} {trade_info['trade']['currency']}
+# ''', reply_markup=kb_accept_order)
             else:
                 await call.answer('Не удалось начать смену, свяжитесь с тех. поддержкой.', show_alert=True)
         else:
@@ -134,10 +150,11 @@ async def acceptOrder(call: types.CallbackQuery, callback_data: dict, state=FSMC
     URL_DJANGO = 'http://194.58.92.160:8000/'
     id = callback_data['id']
     get_trade_info = requests.get(URL_DJANGO + f'api/trade/detail/{id}')
-    if (get_trade_info.json()['trade']['agent'] == None or str(get_trade_info.json()['trade']['agent']) == str(call.from_user.id)):
+    if (get_trade_info.json()['trade']['agent'] == None or str(get_trade_info.json()['trade']['agent']) == str(
+            call.from_user.id)):
         data = {
-            'id' : str(id),
-            'agent' : str(call.from_user.id)
+            'id': str(id),
+            'agent': str(call.from_user.id)
         }
         set_agent_trade = requests.post(URL_DJANGO + f'api/update/trade/', json=data)
 
@@ -145,26 +162,25 @@ async def acceptOrder(call: types.CallbackQuery, callback_data: dict, state=FSMC
 
         if (get_current_info.json()['trade']['agent'] == str(call.from_user.id)):
             kb_accept_payment = InlineKeyboardMarkup(
-                        inline_keyboard=[
-                            [
-                                InlineKeyboardButton(text='Оплатил', callback_data=trade_cb.new(id=id, action='accept_payment'))
-                            ]
-                        ]
+                inline_keyboard=[
+                    [
+                        InlineKeyboardButton(text='Оплатил', callback_data=trade_cb.new(id=id, action='accept_payment'))
+                    ]
+                ]
             )
 
-            
             headers = authorization(get_current_info.json()['user']['key'], get_current_info.json()['user']['email'])
 
             proxy = get_current_info.json()['user']['proxy']
-            
+
             data = {
                 'type': 'confirm-trade'
             }
-            
+
             url = f'https://bitzlato.com/api/p2p/trade/{id}'
             try:
                 req_change_type = requests.post(url, headers=headers, proxies=proxy, json=data)
-                
+
                 if (req_change_type.status_code == 200):
                     await call.answer('Вы успешно взяли заявку в работу!', show_alert=True)
                     await call.message.edit_text(f'''
@@ -186,29 +202,28 @@ async def acceptOrder(call: types.CallbackQuery, callback_data: dict, state=FSMC
     else:
         await call.answer("Заявка уже в работе", show_alert=True)
         await call.message.delete()
-    
+
 
 @dp.callback_query_handler(trade_cb.filter(action=['accept_payment']), state=Activity.acceptOrder)
 async def acceptPayment(call: types.CallbackQuery, callback_data=dict, state=FSMContext):
     id = str(callback_data['id'])
     URL_DJANGO = 'http://194.58.92.160:8000/'
-    
-    get_current_info = requests.get(URL_DJANGO + f'api/trade/detail/{id}')
 
+    get_current_info = requests.get(URL_DJANGO + f'api/trade/detail/{id}')
 
     headers = authorization(get_current_info.json()['user']['key'], get_current_info.json()['user']['email'])
 
     proxy = get_current_info.json()['user']['proxy']
-    
+
     data = {
         'type': 'payment'
     }
-    
+
     url = f'https://bitzlato.bz/api/p2p/trade/{id}'
     try:
-    
+
         req_change_type = requests.post(url, headers=headers, proxies=proxy, json=data)
-        
+
         if (req_change_type.status_code == 200):
             await call.message.answer('Пришлите чек о переводе в виде изображения.')
             await state.update_data(id=id)
@@ -217,16 +232,18 @@ async def acceptPayment(call: types.CallbackQuery, callback_data=dict, state=FSM
             print(f'''ELSE:::   req_text: {req_change_type.text} {req_change_type.status_code}''')
             await call.message.answer('Произошла ошибка, нажмите кнопку заново.')
     except Exception as e:
-        print(f'''EXCEPT:::  Klass: {type(e)}, text: {e}, req_text: {req_change_type.text} {req_change_type.status_code}''')
+        print(
+            f'''EXCEPT:::  Klass: {type(e)}, text: {e}, req_text: {req_change_type.text} {req_change_type.status_code}''')
         await call.message.answer('Произошла ошибка, нажмите кнопку заново.')
-        
+
+
 @dp.message_handler(content_types=['photo'], state=Activity.acceptPayment)
 async def getPhoto(message: types.Message, state=FSMContext):
     URL_DJANGO = 'http://194.58.92.160:8000/'
     id = await state.get_data()
 
     id = id['id']
-    
+
     id = '17268092'
     get_trade_detail = requests.get(URL_DJANGO + f'api/trade/detail/{id}')
     key = get_trade_detail.json()['user']['key']
@@ -238,14 +255,14 @@ async def getPhoto(message: types.Message, state=FSMContext):
     send_message = f'https://bitzlato.bz/api/p2p/trade/{id}/chat/'
     headers = authorization(key, email)
     data_message = {
-        'message' : 'Оплатил.',
-        'payload' : {
-            'message' : 'string'
+        'message': 'Оплатил.',
+        'payload': {
+            'message': 'string'
         }
     }
     send_message_req = requests.post(send_message, headers=headers, proxies=proxy, json=data_message)
     url = f'https://bitzlato.bz/api/p2p/trade/{id}/chat/sendfile'
-    
+
     data = {
         'mime_type': 'image/png',
         'name': 'Check.png'
@@ -253,9 +270,9 @@ async def getPhoto(message: types.Message, state=FSMContext):
     files = {'file': open(fileName, 'rb')}
 
     headers = authorization(key, email)
-    
+
     r = requests.post(url, headers=headers, proxies=proxy, files=files)
-    
+
     body = {
         'tg_id': message.from_user.id,
         'options': {
@@ -273,8 +290,7 @@ async def getPhoto(message: types.Message, state=FSMContext):
 
     await state.finish()
 
+
 @dp.callback_query_handler(text='Назад')
 async def back(call: types.CallbackQuery):
     await call.message.edit_text('Меню', reply_markup=kb_menu_main)
-
-

@@ -244,7 +244,6 @@ async def getPhoto(message: types.Message, state=FSMContext):
 
     id = id['id']
 
-    id = '17268092'
     get_trade_detail = requests.get(URL_DJANGO + f'api/trade/detail/{id}')
     key = get_trade_detail.json()['user']['key']
     proxy = get_trade_detail.json()['user']['proxy']

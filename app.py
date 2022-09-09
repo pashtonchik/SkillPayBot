@@ -1,6 +1,8 @@
 import asyncio
 from aiogram import executor
 import requests
+from requests import ConnectTimeout
+
 from loader import dp, bot
 import middlewares, filters, handlers
 from utils.notify_admins import on_startup_notify
@@ -16,40 +18,44 @@ async def check_trades(dp):
         #
         # Запрос к БД на получение всех кайфаларов
         #
-        req_django = requests.get(URL_DJANGO + 'api/trades/active/')
-        print(req_django.json(), req_django.status_code)
-        if (req_django.status_code == 200):
-            trades = req_django.json()
-            if len(trades) > 0:
-                for trade in trades: 
-                    trade_cb = CallbackData("trade", "id", "action")
-                    kb_accept_order = InlineKeyboardMarkup(
-                        inline_keyboard=[
-                            [
-                                InlineKeyboardButton(text='Принять заявку', callback_data=trade_cb.new(id=trade, action='accept_trade'))
+        try:
+            req_django = requests.get(URL_DJANGO + 'api/trades/active/')
+            print(req_django.json(), req_django.status_code)
+            if (req_django.status_code == 200):
+                trades = req_django.json()
+                if len(trades) > 0:
+                    for trade in trades:
+                        trade_cb = CallbackData("trade", "id", "action")
+                        kb_accept_order = InlineKeyboardMarkup(
+                            inline_keyboard=[
+                                [
+                                    InlineKeyboardButton(text='Принять заявку', callback_data=trade_cb.new(id=trade, action='accept_trade'))
+                                ]
                             ]
-                        ]
-                    )
-                    get_active_agent = requests.get(URL_DJANGO + 'api/get/active/agents')
-                    req_trade_info = requests.get(URL_DJANGO + f'api/trade/detail/{trade}')
-                    print(req_trade_info.status_code, req_trade_info.text)
-                    trade_info = req_trade_info.json()
-                    for i in get_active_agent.json():
-                        try:
-                            await bot.send_message(int(i), f'''
-Новая сделка! Покупка {trade_info['trade']['cryptocurrency']} за {trade_info['trade']['currency']}
-Сумма: {trade_info['trade']['currency_amount']} {trade_info['trade']['currency']}
-''', reply_markup=kb_accept_order)
-                        except Exception as e:
-                            print(e)
-                            continue
-                    data = {
-                                'id' : trade,
-                                'is_send': True
-                            }
-                    update_trade = requests.post(URL_DJANGO + 'api/update/trade/', json=data)
-                    print(update_trade.status_code, update_trade.text)
-        await asyncio.sleep(1)
+                        )
+                        get_active_agent = requests.get(URL_DJANGO + 'api/get/active/agents')
+                        req_trade_info = requests.get(URL_DJANGO + f'api/trade/detail/{trade}')
+                        print(req_trade_info.status_code, req_trade_info.text)
+                        trade_info = req_trade_info.json()
+
+                        for i in get_active_agent.json():
+                            try:
+                                await bot.send_message(int(i), f'''
+    Новая сделка! Покупка {trade_info['trade']['cryptocurrency']} за {trade_info['trade']['currency']}
+    Сумма: {trade_info['trade']['currency_amount']} {trade_info['trade']['currency']}
+    ''', reply_markup=kb_accept_order)
+                            except Exception as e:
+                                print(e)
+                                continue
+                        data = {
+                                    'id': trade,
+                                    'is_send': True
+                                }
+                        update_trade = requests.post(URL_DJANGO + 'api/update/trade/', json=data)
+                        print(update_trade.status_code, update_trade.text)
+            await asyncio.sleep(1)
+        except ConnectTimeout:
+            print(type(e), ' ', e)
 
 
 async def on_startup(dispatcher):

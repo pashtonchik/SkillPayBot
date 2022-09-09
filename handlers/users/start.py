@@ -214,8 +214,10 @@ async def acceptPayment(call: types.CallbackQuery, callback_data=dict, state=FSM
             await state.update_data(id=id)
             await Activity.acceptPayment.set()
         else:
+            print(f'''ELSE:::   req_text: {req_change_type.text} {req_change_type.status_code}''')
             await call.message.answer('Произошла ошибка, нажмите кнопку заново.')
     except Exception as e:
+        print(f'''EXCEPT:::  Klass: {type(e)}, text: {e}, req_text: {req_change_type.text} {req_change_type.status_code}''')
         await call.message.answer('Произошла ошибка, нажмите кнопку заново.')
         
 @dp.message_handler(content_types=['photo'], state=Activity.acceptPayment)

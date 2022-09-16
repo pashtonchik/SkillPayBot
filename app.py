@@ -60,7 +60,7 @@ async def check_trades(dp):
             continue
 
 rjrjrjjr
-async def on_startup(dispatcher):
+async def on_startup(edispatcher):
     # Устанавливаем дефолтные команды
     await set_default_commands(dispatcher)
     asyncio.create_task(check_trades(dp=dp))

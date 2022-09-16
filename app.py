@@ -10,7 +10,7 @@ from utils.set_bot_commands import set_default_commands
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.callback_data import CallbackData
 
-URL_DJANGO = 'http://194.58.92.160:8000/'
+URL_DJANGO = 'http://194.58.92.160:8001/'
 URL_BZ = 'https://bitzlato.com/'
 
 async def check_trades(dp):
@@ -69,5 +69,4 @@ async def on_startup(dispatcher):
 
 
 if __name__ == '__main__':
-    #executor.start_polling(dp, on_startup=on_startup)
-    print("I am gayest gay in the world. Smirnoff Hello")
+    executor.start_polling(dp, on_startup=on_startup)

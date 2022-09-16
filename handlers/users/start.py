@@ -1,3 +1,4 @@
+import asyncio
 from cgitb import text
 from email import header
 from wave import Wave_write
@@ -25,9 +26,38 @@ from loader import bot
 
 trade_cb = CallbackData("trade", "id", "action")
 
-URL = 'http://194.58.92.160:8000/api/'
+URL = 'http://194.58.92.160:8001/api/'
 
+async def confirm_payment(id, message, state):
+    while 1:
+        try:
+            req = requests.get(URL + f'api/trade/detail/{id}')
+            if (req.status_code == 200):
+                trade_info = req.json()
+                if (trade_info['trade']['status'] == 'confirm_payment'):
+                    body = {
+                        'tg_id': message.from_user.id,
+                        'options': {
+                            'is_working_now': False,
+                            'is_instead': True,
+                        }
+                    }
 
+                    change_status_agent = requests.post(URL + 'edit_agent_status/', json=body)
+
+                    if (change_status_agent.status_code == 200):
+                        await message.reply('Чек принят! Сделка завершена, ожидайте следующую.')
+                    else:
+                        await message.answer('Произошла ошибка, свяжитесь с админом.')
+
+                    await state.finish()
+                    break
+            await asyncio.sleep(1)
+            
+        except Exception as e:
+            print(e)
+            continue
+    
 def authorization(key, email_bz):
     dt = datetime.datetime.now()
     ts = time.mktime(dt.timetuple())
@@ -147,7 +177,7 @@ async def startJob(call: types.CallbackQuery):
 
 @dp.callback_query_handler(trade_cb.filter(action=['accept_trade']))
 async def acceptOrder(call: types.CallbackQuery, callback_data: dict, state=FSMContext):
-    URL_DJANGO = 'http://194.58.92.160:8000/'
+    URL_DJANGO = 'http://194.58.92.160:8001/'
     id = callback_data['id']
     get_trade_info = requests.get(URL_DJANGO + f'api/trade/detail/{id}')
     if (get_trade_info.json()['trade']['agent'] == None or str(get_trade_info.json()['trade']['agent']) == str(
@@ -207,7 +237,7 @@ async def acceptOrder(call: types.CallbackQuery, callback_data: dict, state=FSMC
 @dp.callback_query_handler(trade_cb.filter(action=['accept_payment']), state=Activity.acceptOrder)
 async def acceptPayment(call: types.CallbackQuery, callback_data=dict, state=FSMContext):
     id = str(callback_data['id'])
-    URL_DJANGO = 'http://194.58.92.160:8000/'
+    URL_DJANGO = 'http://194.58.92.160:8001/'
 
     get_current_info = requests.get(URL_DJANGO + f'api/trade/detail/{id}')
 
@@ -239,12 +269,11 @@ async def acceptPayment(call: types.CallbackQuery, callback_data=dict, state=FSM
 
 @dp.message_handler(content_types=['photo'], state=Activity.acceptPayment)
 async def getPhoto(message: types.Message, state=FSMContext):
-    URL_DJANGO = 'http://194.58.92.160:8000/'
+    URL_DJANGO = 'http://194.58.92.160:8001/'
     id = await state.get_data()
 
     id = id['id']
 
-    id = '17268092'
     get_trade_detail = requests.get(URL_DJANGO + f'api/trade/detail/{id}')
     key = get_trade_detail.json()['user']['key']
     proxy = get_trade_detail.json()['user']['proxy']
@@ -273,22 +302,8 @@ async def getPhoto(message: types.Message, state=FSMContext):
 
     r = requests.post(url, headers=headers, proxies=proxy, files=files)
 
-    body = {
-        'tg_id': message.from_user.id,
-        'options': {
-            'is_working_now': False,
-            'is_instead': True,
-        }
-    }
-
-    change_status_agent = requests.post(URL + 'edit_agent_status/', json=body)
-
-    if (change_status_agent.status_code == 200):
-        await message.reply('Чек принят! Сделка завершена, ожидайте следующую.')
-    else:
-        await message.answer('Произошла ошибка, свяжитесь с админом.')
-
-    await state.finish()
+    asyncio.create_task(confirm_payment(id=id, message=message, state=state))
+    
 
 
 @dp.callback_query_handler(text='Назад')

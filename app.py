@@ -59,7 +59,7 @@ async def check_trades(dp):
             print(type(e), ' ', e)
             continue
 
-
+rjrjrjjr
 async def on_startup(dispatcher):
     # Устанавливаем дефолтные команды
     await set_default_commands(dispatcher)
@@ -70,5 +70,5 @@ async def on_startup(dispatcher):
 
 
 if __name__ == '__main__':
-    executor.start_polling(dp, on_startup=on_startup)
-
+    #executor.start_polling(dp, on_startup=on_startup)
+    print("I am gayest gay in the world. Smirnoff Hello")

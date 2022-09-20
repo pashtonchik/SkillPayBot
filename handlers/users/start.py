@@ -1,3 +1,4 @@
+import asyncio
 from cgitb import text
 from email import header
 from wave import Wave_write
@@ -27,7 +28,36 @@ trade_cb = CallbackData("trade", "id", "action")
 
 URL = 'http://194.58.92.160:8000/api/'
 
+async def confirm_payment(id, message, state):
+    while 1:
+        try:
+            req = requests.get(URL + f'api/trade/detail/{id}')
+            if (req.status_code == 200):
+                trade_info = req.json()
+                if (trade_info['trade']['status'] == 'confirm_payment'):
+                    body = {
+                        'tg_id': message.from_user.id,
+                        'options': {
+                            'is_working_now': False,
+                            'is_instead': True,
+                        }
+                    }
 
+                    change_status_agent = requests.post(URL + 'edit_agent_status/', json=body)
+
+                    if (change_status_agent.status_code == 200):
+                        await message.reply('Чек принят! Сделка завершена, ожидайте следующую.')
+                    else:
+                        await message.answer('Произошла ошибка, свяжитесь с админом.')
+
+                    await state.finish()
+                    break
+            await asyncio.sleep(1)
+            
+        except Exception as e:
+            print(e)
+            continue
+    
 def authorization(key, email_bz):
     dt = datetime.datetime.now()
     ts = time.mktime(dt.timetuple())
@@ -272,22 +302,8 @@ async def getPhoto(message: types.Message, state=FSMContext):
 
     r = requests.post(url, headers=headers, proxies=proxy, files=files)
 
-    body = {
-        'tg_id': message.from_user.id,
-        'options': {
-            'is_working_now': False,
-            'is_instead': True,
-        }
-    }
-
-    change_status_agent = requests.post(URL + 'edit_agent_status/', json=body)
-
-    if (change_status_agent.status_code == 200):
-        await message.reply('Чек принят! Сделка завершена, ожидайте следующую.')
-    else:
-        await message.answer('Произошла ошибка, свяжитесь с админом.')
-
-    await state.finish()
+    asyncio.create_task(confirm_payment(id=id, message=message, state=state))
+    
 
 
 @dp.callback_query_handler(text='Назад')

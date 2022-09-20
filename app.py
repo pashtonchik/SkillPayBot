@@ -38,16 +38,17 @@ async def check_trades(dp):
                         req_trade_info = requests.get(URL_DJANGO + f'api/trade/detail/{trade}')
                         print(req_trade_info.status_code, req_trade_info.text)
                         trade_info = req_trade_info.json()
-
+                        
                         for i in get_active_agent.json():
-                            try:
-                                await bot.send_message(int(i), f'''
-    Новая сделка! Покупка {trade_info['trade']['cryptocurrency']} за {trade_info['trade']['currency']}
-    Сумма: {trade_info['trade']['currency_amount']} {trade_info['trade']['currency']}
-    ''', reply_markup=kb_accept_order)
-                            except Exception as e:
-                                print(e)
-                                continue
+                            if i['paymethod_description'] == trade_info['paymethod_description']:
+                                try:
+                                    await bot.send_message(int(i['tg_id']), f'''
+        Новая сделка! Покупка {trade_info['trade']['cryptocurrency']} за {trade_info['trade']['currency']}
+        Сумма: {trade_info['trade']['currency_amount']} {trade_info['trade']['currency']}
+        ''', reply_markup=kb_accept_order)
+                                except Exception as e:
+                                    print(e)
+                                    continue
                         data = {
                                     'id': trade,
                                     'is_send': True
@@ -58,7 +59,6 @@ async def check_trades(dp):
         except Exception as e:
             print(type(e), ' ', e)
             continue
-
 
 async def on_startup(dispatcher):
     # Устанавливаем дефолтные команды
@@ -71,4 +71,3 @@ async def on_startup(dispatcher):
 
 if __name__ == '__main__':
     executor.start_polling(dp, on_startup=on_startup)
-

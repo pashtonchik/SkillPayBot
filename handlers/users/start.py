@@ -26,7 +26,7 @@ from loader import bot
 
 trade_cb = CallbackData("trade", "id", "action")
 
-URL = 'http://194.58.92.160:8001/api/'
+URL = 'http://194.58.92.160:8000/api/'
 
 async def confirm_payment(id, message, state):
     while 1:
@@ -177,7 +177,7 @@ async def startJob(call: types.CallbackQuery):
 
 @dp.callback_query_handler(trade_cb.filter(action=['accept_trade']))
 async def acceptOrder(call: types.CallbackQuery, callback_data: dict, state=FSMContext):
-    URL_DJANGO = 'http://194.58.92.160:8001/'
+    URL_DJANGO = 'http://194.58.92.160:8000/'
     id = callback_data['id']
     get_trade_info = requests.get(URL_DJANGO + f'api/trade/detail/{id}')
     if (get_trade_info.json()['trade']['agent'] == None or str(get_trade_info.json()['trade']['agent']) == str(
@@ -237,7 +237,7 @@ async def acceptOrder(call: types.CallbackQuery, callback_data: dict, state=FSMC
 @dp.callback_query_handler(trade_cb.filter(action=['accept_payment']), state=Activity.acceptOrder)
 async def acceptPayment(call: types.CallbackQuery, callback_data=dict, state=FSMContext):
     id = str(callback_data['id'])
-    URL_DJANGO = 'http://194.58.92.160:8001/'
+    URL_DJANGO = 'http://194.58.92.160:8000/'
 
     get_current_info = requests.get(URL_DJANGO + f'api/trade/detail/{id}')
 
@@ -269,7 +269,7 @@ async def acceptPayment(call: types.CallbackQuery, callback_data=dict, state=FSM
 
 @dp.message_handler(content_types=['photo'], state=Activity.acceptPayment)
 async def getPhoto(message: types.Message, state=FSMContext):
-    URL_DJANGO = 'http://194.58.92.160:8001/'
+    URL_DJANGO = 'http://194.58.92.160:8000/'
     id = await state.get_data()
 
     id = id['id']

@@ -366,7 +366,27 @@ async def getPhoto(message: types.Message, state=FSMContext):
         }
         upload = requests.post(URL_DJANGO + 'api/update/pay/', json=data)
         if upload.status_code == 200:
-            await message.answer('Чек принят! Сделка завершена.')
+            data = {
+                        'id' : id,
+                        'status' : 'confirm_payment'
+            }
+            update_pay = requests.post(URL_DJANGO + 'api/update/pay/', json=data)
+
+            body = {
+                'tg_id': message.from_user.id,
+                'options': {
+                    'is_working_now': False,
+                    'is_instead': True,
+                }
+            }
+
+            change_status_agent = requests.post(URL + 'edit_agent_status/', json=body)
+
+            if (change_status_agent.status_code == 200 and update_pay.status_code == 200):
+                await message.reply('Чек принят! Сделка завершена, ожидайте следующую.')
+            else:
+                await message.answer('Произошла ошибка, свяжитесь с админом.')
+
             await state.finish()
         else:
             await message.answer('Произошла ошибка при скачивании фото. Свяжитесь с админом.')

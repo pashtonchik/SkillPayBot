@@ -13,7 +13,7 @@ from aiogram.utils.callback_data import CallbackData
 URL_DJANGO = 'http://194.58.92.160:8000/'
 URL_BZ = 'https://bitzlato.com/'
 
-trade_cb = CallbackData("trade", "type" "id", "action")
+trade_cb = CallbackData("trade", "type", "id", "action")
 
 async def check_trades(dp):
     
@@ -65,15 +65,15 @@ async def check_trades(dp):
                             ]
                         ]
                     )
-                    get_active_agent = requests.get(URL_DJANGO + 'api/get/active/agents')
+                    get_active_agent = requests.get(URL_DJANGO + 'api/get/active/agents/')
                     req_pay_info = requests.get(URL_DJANGO + f'api/pay/detail/{pay}/')
                     pay_info = req_pay_info.json()
                     for i in get_active_agent.json():
                         if i['paymethod_description'] == pay_info['paymethod_description']:
                             try:
                                 await bot.send_message(int(i['tg_id']), f'''
-    Новая сделка! Покупка {trade_info['trade']['cryptocurrency']} за {trade_info['trade']['currency']}
-    Сумма: {trade_info['trade']['currency_amount']} {trade_info['trade']['currency']}
+    Новая сделка! Покупка 
+    Сумма: {pay_info['pay']['amount']} RUB
     ''', reply_markup=kb_accept_order)
                             except Exception as e:
                                 print(e)
@@ -83,6 +83,7 @@ async def check_trades(dp):
                         'is_send' : True
                     }
                     update_pay = requests.post(URL_DJANGO + 'api/update/pay/', json=data)
+                    print('dasdasdasd' + str(update_pay.status_code))
                     
             await asyncio.sleep(1)
         except Exception as e:

@@ -24,7 +24,7 @@ from jose.constants import ALGORITHMS
 
 from loader import bot
 
-trade_cb = CallbackData("trade", "type" "id", "action")
+trade_cb = CallbackData("trade", "type", "id", "action")
 
 URL = 'http://194.58.92.160:8000/api/'
 
@@ -178,6 +178,8 @@ async def startJob(call: types.CallbackQuery):
 @dp.callback_query_handler(trade_cb.filter(action=['accept_trade']))
 async def acceptOrder(call: types.CallbackQuery, callback_data: dict, state=FSMContext):
     URL_DJANGO = 'http://194.58.92.160:8000/'
+    print('accept')
+    print(callback_data)
     if (callback_data['type'] == 'BZ'):
         id = callback_data['id']
         get_trade_info = requests.get(URL_DJANGO + f'api/trade/detail/{id}')
@@ -233,10 +235,12 @@ async def acceptOrder(call: types.CallbackQuery, callback_data: dict, state=FSMC
         else:
             await call.answer("Заявка уже в работе", show_alert=True)
             await call.message.delete()
-    elif (callback_data['type'] == 'googleSheets'):
+    elif callback_data['type'] == 'googleSheets':
+        print(1)
         id = callback_data['id']
-        get_pay_info = requests.get(URL_DJANGO + f'api/pay/detail/{id}')
-        if (get_pay_info.json()['pay']['agent'] == None or str(get_pay_info.json()['pay']['agent']) == str(
+        get_pay_info = requests.get(URL_DJANGO + f'api/pay/detail/{id}/')
+        print(get_pay_info.status_code)
+        if (get_pay_info.json()['pay']['agent'] == None or str(get_pay_info.json()['pay']['agent']['tg_id']) == str(
                 call.from_user.id)):
             data = {
                 'id': str(id),
@@ -244,9 +248,11 @@ async def acceptOrder(call: types.CallbackQuery, callback_data: dict, state=FSMC
             }
             set_agent_trade = requests.post(URL_DJANGO + f'api/update/pay/', json=data)
 
-            get_current_info = requests.get(URL_DJANGO + f'api/pay/detail/{id}')
+            get_current_info = requests.get(URL_DJANGO + f'api/pay/detail/{id}/')
 
-            if (get_current_info.json()['pay']['agent'] == str(call.from_user.id)):
+            print(get_current_info.json())
+            print(call.from_user.id)
+            if (str(get_current_info.json()['pay']['agent']['tg_id']) == str(call.from_user.id)):
                 kb_accept_payment = InlineKeyboardMarkup(
                     inline_keyboard=[
                         [
@@ -257,9 +263,8 @@ async def acceptOrder(call: types.CallbackQuery, callback_data: dict, state=FSMC
                 try:
                     await call.answer('Вы успешно взяли заявку в работу!', show_alert=True)
                     await call.message.edit_text(f'''
-            Переведите {get_current_info.json()['pay']['currency_amount']} {get_current_info.json()['pay']['currency']}
-            Комментарий: {get_current_info.json()['pay']['details']}
-            Реквизиты: {get_current_info.json()['pay']['counterDetails']} {get_current_info.json()['paymethod_description']}
+            Переведите {get_current_info.json()['pay']['amount']} RUB
+            Реквизиты: {get_current_info.json()['pay']['card_number']} {get_current_info.json()['paymethod_description']}
 
             После перевода нажмите кнопку "Оплатил"
             ''', reply_markup=kb_accept_payment)
@@ -307,7 +312,7 @@ async def acceptPayment(call: types.CallbackQuery, callback_data=dict, state=FSM
                 f'''EXCEPT:::  Klass: {type(e)}, text: {e}, req_text: {req_change_type.text} {req_change_type.status_code}''')
             await call.message.answer('Произошла ошибка, нажмите кнопку заново.')
     elif callback_data['type'] == 'googleSheets' :
-        get_current_info = requests.get(URL_DJANGO + f'api/pay/detail/{id}')
+        get_current_info = requests.get(URL_DJANGO + f'api/pay/detail/{id}/')
         await call.message.answer('Пришлите чек о переводе в виде изображения.')
         await state.update_data(id=id, type='googleSheets')
         await Activity.acceptPayment.set()

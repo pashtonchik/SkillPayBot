@@ -276,7 +276,9 @@ async def acceptOrder(call: types.CallbackQuery, callback_data: dict, state=FSMC
                 await call.answer("Заявка уже в работе", show_alert=True)
                 await call.message.delete()
 
-            
+        else:
+            await call.answer('Заявка уже в работе.', show_alert=True)
+            await call.message.delete()
 
 @dp.callback_query_handler(trade_cb.filter(action=['accept_payment']), state=Activity.acceptOrder)
 async def acceptPayment(call: types.CallbackQuery, callback_data=dict, state=FSMContext):
@@ -322,6 +324,7 @@ async def acceptPayment(call: types.CallbackQuery, callback_data=dict, state=FSM
 async def getPhoto(message: types.Message, state=FSMContext):
     URL_DJANGO = 'http://194.58.92.160:8000/'
     data = await state.get_data()
+    id = data['id']
     if data['type'] == 'BZ' :
         id = data['id']
 
@@ -363,6 +366,7 @@ async def getPhoto(message: types.Message, state=FSMContext):
         }
         upload = requests.post(URL_DJANGO + 'api/update/pay/', json=data)
         if upload.status_code == 200:
+            await message.answer('Чек принят! Сделка завершена.')
             await state.finish()
         else:
             await message.answer('Произошла ошибка при скачивании фото. Свяжитесь с админом.')

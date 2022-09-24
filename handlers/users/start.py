@@ -24,7 +24,7 @@ from jose.constants import ALGORITHMS
 
 from loader import bot
 
-trade_cb = CallbackData("trade", "id", "action")
+trade_cb = CallbackData("trade", "type" "id", "action")
 
 URL = 'http://194.58.92.160:8000/api/'
 
@@ -178,132 +178,190 @@ async def startJob(call: types.CallbackQuery):
 @dp.callback_query_handler(trade_cb.filter(action=['accept_trade']))
 async def acceptOrder(call: types.CallbackQuery, callback_data: dict, state=FSMContext):
     URL_DJANGO = 'http://194.58.92.160:8000/'
-    id = callback_data['id']
-    get_trade_info = requests.get(URL_DJANGO + f'api/trade/detail/{id}')
-    if (get_trade_info.json()['trade']['agent'] == None or str(get_trade_info.json()['trade']['agent']) == str(
-            call.from_user.id)):
-        data = {
-            'id': str(id),
-            'agent': str(call.from_user.id)
-        }
-        set_agent_trade = requests.post(URL_DJANGO + f'api/update/trade/', json=data)
-
-        get_current_info = requests.get(URL_DJANGO + f'api/trade/detail/{id}')
-
-        if (get_current_info.json()['trade']['agent'] == str(call.from_user.id)):
-            kb_accept_payment = InlineKeyboardMarkup(
-                inline_keyboard=[
-                    [
-                        InlineKeyboardButton(text='Оплатил', callback_data=trade_cb.new(id=id, action='accept_payment'))
-                    ]
-                ]
-            )
-
-            headers = authorization(get_current_info.json()['user']['key'], get_current_info.json()['user']['email'])
-
-            proxy = get_current_info.json()['user']['proxy']
-
+    if (callback_data['type'] == 'BZ'):
+        id = callback_data['id']
+        get_trade_info = requests.get(URL_DJANGO + f'api/trade/detail/{id}')
+        if (get_trade_info.json()['trade']['agent'] == None or str(get_trade_info.json()['trade']['agent']) == str(
+                call.from_user.id)):
             data = {
-                'type': 'confirm-trade'
+                'id': str(id),
+                'agent': str(call.from_user.id)
             }
+            set_agent_trade = requests.post(URL_DJANGO + f'api/update/trade/', json=data)
 
-            url = f'https://bitzlato.com/api/p2p/trade/{id}'
-            try:
-                req_change_type = requests.post(url, headers=headers, proxies=proxy, json=data)
+            get_current_info = requests.get(URL_DJANGO + f'api/trade/detail/{id}')
 
-                if (req_change_type.status_code == 200):
-                    await call.answer('Вы успешно взяли заявку в работу!', show_alert=True)
-                    await call.message.edit_text(f'''
-    Переведите {get_current_info.json()['trade']['currency_amount']} {get_current_info.json()['trade']['currency']}
-    Комментарий: {get_current_info.json()['trade']['details']}
-    Реквизиты: {get_current_info.json()['trade']['counterDetails']} {get_current_info.json()['paymethod_description']}
+            if (get_current_info.json()['trade']['agent'] == str(call.from_user.id)):
+                kb_accept_payment = InlineKeyboardMarkup(
+                    inline_keyboard=[
+                        [
+                            InlineKeyboardButton(text='Оплатил', callback_data=trade_cb.new(id=id, type='BZ', action='accept_payment'))
+                        ]
+                    ]
+                )
 
-    После перевода нажмите кнопку "Оплатил"
-    ''', reply_markup=kb_accept_payment)
-                    await Activity.acceptOrder.set()
-                else:
+                headers = authorization(get_current_info.json()['user']['key'], get_current_info.json()['user']['email'])
+
+                proxy = get_current_info.json()['user']['proxy']
+
+                data = {
+                    'type': 'confirm-trade'
+                }
+
+                url = f'https://bitzlato.com/api/p2p/trade/{id}'
+                try:
+                    req_change_type = requests.post(url, headers=headers, proxies=proxy, json=data)
+
+                    if (req_change_type.status_code == 200):
+                        await call.answer('Вы успешно взяли заявку в работу!', show_alert=True)
+                        await call.message.edit_text(f'''
+        Переведите {get_current_info.json()['trade']['currency_amount']} {get_current_info.json()['trade']['currency']}
+        Комментарий: {get_current_info.json()['trade']['details']}
+        Реквизиты: {get_current_info.json()['trade']['counterDetails']} {get_current_info.json()['paymethod_description']}
+
+        После перевода нажмите кнопку "Оплатил"
+        ''', reply_markup=kb_accept_payment)
+                        await Activity.acceptOrder.set()
+                    else:
+                        await call.answer('Произошла ошибка, нажмите кнопку заново.')
+                except Exception as e:
                     await call.answer('Произошла ошибка, нажмите кнопку заново.')
-            except Exception as e:
-                await call.answer('Произошла ошибка, нажмите кнопку заново.')
 
+            else:
+                await call.answer("Заявка уже в работе", show_alert=True)
+                await call.message.delete()
         else:
             await call.answer("Заявка уже в работе", show_alert=True)
             await call.message.delete()
-    else:
-        await call.answer("Заявка уже в работе", show_alert=True)
-        await call.message.delete()
+    elif (callback_data['type'] == 'googleSheets'):
+        id = callback_data['id']
+        get_pay_info = requests.get(URL_DJANGO + f'api/pay/detail/{id}')
+        if (get_pay_info.json()['pay']['agent'] == None or str(get_pay_info.json()['pay']['agent']) == str(
+                call.from_user.id)):
+            data = {
+                'id': str(id),
+                'agent': str(call.from_user.id)
+            }
+            set_agent_trade = requests.post(URL_DJANGO + f'api/update/pay/', json=data)
 
+            get_current_info = requests.get(URL_DJANGO + f'api/pay/detail/{id}')
+
+            if (get_current_info.json()['pay']['agent'] == str(call.from_user.id)):
+                kb_accept_payment = InlineKeyboardMarkup(
+                    inline_keyboard=[
+                        [
+                            InlineKeyboardButton(text='Оплатил', callback_data=trade_cb.new(id=id, type='googleSheets' , action='accept_payment'))
+                        ]
+                    ]
+                )
+                try:
+                    await call.answer('Вы успешно взяли заявку в работу!', show_alert=True)
+                    await call.message.edit_text(f'''
+            Переведите {get_current_info.json()['pay']['currency_amount']} {get_current_info.json()['pay']['currency']}
+            Комментарий: {get_current_info.json()['pay']['details']}
+            Реквизиты: {get_current_info.json()['pay']['counterDetails']} {get_current_info.json()['paymethod_description']}
+
+            После перевода нажмите кнопку "Оплатил"
+            ''', reply_markup=kb_accept_payment)
+                    await Activity.acceptOrder.set()
+                except Exception as e:
+                    await call.answer('Произошла ошибка, нажмите кнопку заново.')
+
+            else:
+                await call.answer("Заявка уже в работе", show_alert=True)
+                await call.message.delete()
+
+            
 
 @dp.callback_query_handler(trade_cb.filter(action=['accept_payment']), state=Activity.acceptOrder)
 async def acceptPayment(call: types.CallbackQuery, callback_data=dict, state=FSMContext):
     id = str(callback_data['id'])
     URL_DJANGO = 'http://194.58.92.160:8000/'
 
-    get_current_info = requests.get(URL_DJANGO + f'api/trade/detail/{id}')
+    if (callback_data['type'] == 'BZ'):
 
-    headers = authorization(get_current_info.json()['user']['key'], get_current_info.json()['user']['email'])
+        get_current_info = requests.get(URL_DJANGO + f'api/trade/detail/{id}')
 
-    proxy = get_current_info.json()['user']['proxy']
+        headers = authorization(get_current_info.json()['user']['key'], get_current_info.json()['user']['email'])
 
-    data = {
-        'type': 'payment'
-    }
+        proxy = get_current_info.json()['user']['proxy']
 
-    url = f'https://bitzlato.bz/api/p2p/trade/{id}'
-    try:
+        data = {
+            'type': 'payment'
+        }
 
-        req_change_type = requests.post(url, headers=headers, proxies=proxy, json=data)
+        url = f'https://bitzlato.bz/api/p2p/trade/{id}'
+        try:
 
-        if (req_change_type.status_code == 200):
-            await call.message.answer('Пришлите чек о переводе в виде изображения.')
-            await state.update_data(id=id)
-            await Activity.acceptPayment.set()
-        else:
-            print(f'''ELSE:::   req_text: {req_change_type.text} {req_change_type.status_code}''')
+            req_change_type = requests.post(url, headers=headers, proxies=proxy, json=data)
+
+            if (req_change_type.status_code == 200):
+                await call.message.answer('Пришлите чек о переводе в виде изображения.')
+                await state.update_data(id=id, type='BZ')
+                await Activity.acceptPayment.set()
+            else:
+                print(f'''ELSE:::   req_text: {req_change_type.text} {req_change_type.status_code}''')
+                await call.message.answer('Произошла ошибка, нажмите кнопку заново.')
+        except Exception as e:
+            print(
+                f'''EXCEPT:::  Klass: {type(e)}, text: {e}, req_text: {req_change_type.text} {req_change_type.status_code}''')
             await call.message.answer('Произошла ошибка, нажмите кнопку заново.')
-    except Exception as e:
-        print(
-            f'''EXCEPT:::  Klass: {type(e)}, text: {e}, req_text: {req_change_type.text} {req_change_type.status_code}''')
-        await call.message.answer('Произошла ошибка, нажмите кнопку заново.')
+    elif callback_data['type'] == 'googleSheets' :
+        get_current_info = requests.get(URL_DJANGO + f'api/pay/detail/{id}')
+        await call.message.answer('Пришлите чек о переводе в виде изображения.')
+        await state.update_data(id=id, type='googleSheets')
+        await Activity.acceptPayment.set()
 
 
 @dp.message_handler(content_types=['photo'], state=Activity.acceptPayment)
 async def getPhoto(message: types.Message, state=FSMContext):
     URL_DJANGO = 'http://194.58.92.160:8000/'
-    id = await state.get_data()
+    data = await state.get_data()
+    if data['type'] == 'BZ' :
+        id = data['id']
 
-    id = id['id']
+        get_trade_detail = requests.get(URL_DJANGO + f'api/trade/detail/{id}')
+        key = get_trade_detail.json()['user']['key']
+        proxy = get_trade_detail.json()['user']['proxy']
+        email = get_trade_detail.json()['user']['email']
 
-    get_trade_detail = requests.get(URL_DJANGO + f'api/trade/detail/{id}')
-    key = get_trade_detail.json()['user']['key']
-    proxy = get_trade_detail.json()['user']['proxy']
-    email = get_trade_detail.json()['user']['email']
-
-    fileName = f'/root/SkillPayBot/media/{id}_{message.from_user.id}.png'
-    await message.photo[-1].download(fileName)
-    send_message = f'https://bitzlato.bz/api/p2p/trade/{id}/chat/'
-    headers = authorization(key, email)
-    data_message = {
-        'message': 'Оплатил.',
-        'payload': {
-            'message': 'string'
+        fileName = f'/root/prod/SkillPay-Django/tgchecks/{id}_{message.from_user.id}.png'
+        await message.photo[-1].download(fileName)
+        send_message = f'https://bitzlato.bz/api/p2p/trade/{id}/chat/'
+        headers = authorization(key, email)
+        data_message = {
+            'message': 'Оплатил.',
+            'payload': {
+                'message': 'string'
+            }
         }
-    }
-    send_message_req = requests.post(send_message, headers=headers, proxies=proxy, json=data_message)
-    url = f'https://bitzlato.bz/api/p2p/trade/{id}/chat/sendfile'
+        send_message_req = requests.post(send_message, headers=headers, proxies=proxy, json=data_message)
+        url = f'https://bitzlato.bz/api/p2p/trade/{id}/chat/sendfile'
 
-    data = {
-        'mime_type': 'image/png',
-        'name': 'Check.png'
-    }
-    files = {'file': open(fileName, 'rb')}
+        data = {
+            'mime_type': 'image/png',
+            'name': 'Check.png'
+        }
+        files = {'file': open(fileName, 'rb')}
 
-    headers = authorization(key, email)
+        headers = authorization(key, email)
 
-    r = requests.post(url, headers=headers, proxies=proxy, files=files)
+        r = requests.post(url, headers=headers, proxies=proxy, files=files)
 
-    asyncio.create_task(confirm_payment(id=id, message=message, state=state))
-    
+        asyncio.create_task(confirm_payment(id=id, message=message, state=state))
+    elif data['type'] == 'googleSheets':
+        fileName = f'/root/prod/SkillPay-Django/tgchecks/{id}_{message.from_user.id}.png'
+        await message.photo[-1].download(fileName)
+        data = {
+            'id' : id,
+            'cheque' : f'tgchecks/{id}_{message.from_user.id}.png'
+        }
+        upload = requests.post(URL_DJANGO + 'api/update/pay/', json=data)
+        if upload.status_code == 200:
+            await state.finish()
+        else:
+            await message.answer('Произошла ошибка при скачивании фото. Свяжитесь с админом.')
+            await state.finish()
 
 
 @dp.callback_query_handler(text='Назад')

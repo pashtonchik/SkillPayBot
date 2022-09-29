@@ -1,26 +1,19 @@
 import asyncio
 from aiogram import executor
 import requests
-from requests import ConnectTimeout
-
 from loader import dp, bot
-import middlewares, filters, handlers
+from settings import URL_DJANGO, URL_BZ
 from utils.notify_admins import on_startup_notify
 from utils.set_bot_commands import set_default_commands
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.callback_data import CallbackData
 
-URL_DJANGO = 'http://194.58.92.160:8000/'
-URL_BZ = 'https://bitzlato.com/'
-
 trade_cb = CallbackData("trade", "type", "id", "action")
+
 
 async def check_trades(dp):
     
     while 1:
-        #
-        # Запрос к БД на получение всех кайфаларов
-        #
         try:
             req_django = requests.get(URL_DJANGO + 'api/trades/active/')
             print(req_django.json(), req_django.status_code)
@@ -32,7 +25,12 @@ async def check_trades(dp):
                     kb_accept_order = InlineKeyboardMarkup(
                         inline_keyboard=[
                             [
-                                InlineKeyboardButton(text='Принять заявку', callback_data=trade_cb.new(id=trade, type='BZ', action='accept_trade'))
+                                InlineKeyboardButton(text='Принять заявку',
+                                                     callback_data=trade_cb.new(id=trade,
+                                                                                type='BZ',
+                                                                                action='accept_trade'
+                                                                                )
+                                                     )
                             ]
                         ]
                     )
@@ -61,7 +59,12 @@ async def check_trades(dp):
                     kb_accept_order = InlineKeyboardMarkup(
                         inline_keyboard=[
                             [
-                                InlineKeyboardButton(text='Принять заявку', callback_data=trade_cb.new(id=pay, type='googleSheets', action='accept_trade'))
+                                InlineKeyboardButton(text='Принять заявку',
+                                                     callback_data=trade_cb.new(id=pay,
+                                                                                type='googleSheets',
+                                                                                action='accept_trade'
+                                                                                )
+                                                     )
                             ]
                         ]
                     )
@@ -79,8 +82,8 @@ async def check_trades(dp):
                                 print(e)
                                 continue
                     data = {
-                        'id' : pay,
-                        'is_send' : True
+                        'id': pay,
+                        'is_send': True
                     }
                     update_pay = requests.post(URL_DJANGO + 'api/update/pay/', json=data)
                     print('dasdasdasd' + str(update_pay.status_code))
@@ -90,12 +93,10 @@ async def check_trades(dp):
             print(type(e), ' ', e)
             continue
 
+
 async def on_startup(dispatcher):
-    # Устанавливаем дефолтные команды
     await set_default_commands(dispatcher)
     asyncio.create_task(check_trades(dp=dp))
-
-    # Уведомляет про запуск
     await on_startup_notify(dispatcher)
 
 

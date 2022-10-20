@@ -1,8 +1,9 @@
 import asyncio
-from aiogram import executor
+from aiogram import executor, types
 import requests
+import middlewares, filters, handlers
 from loader import dp, bot
-from settings import URL_DJANGO, URL_BZ
+from settings import URL_DJANGO
 from utils.notify_admins import on_startup_notify
 from utils.set_bot_commands import set_default_commands
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
@@ -15,7 +16,7 @@ async def check_trades(dp):
     
     while 1:
         try:
-            req_django = requests.get(URL_DJANGO + 'api/trades/active/')
+            req_django = requests.get(URL_DJANGO + 'trades/active/')
             print(req_django.json(), req_django.status_code)
             if req_django.status_code == 200:
                 trades = req_django.json().get('trades', [])
@@ -34,8 +35,8 @@ async def check_trades(dp):
                             ]
                         ]
                     )
-                    get_active_agent = requests.get(URL_DJANGO + 'api/get/active/agents')
-                    req_trade_info = requests.get(URL_DJANGO + f'api/trade/detail/{trade}')
+                    get_active_agent = requests.get(URL_DJANGO + 'get/active/agents/')
+                    req_trade_info = requests.get(URL_DJANGO + f'trade/detail/{trade}/')
                     print(req_trade_info.status_code, req_trade_info.text)
                     trade_info = req_trade_info.json()
                     
@@ -53,7 +54,7 @@ async def check_trades(dp):
                                 'id': trade,
                                 'is_send': True
                             }
-                    update_trade = requests.post(URL_DJANGO + 'api/update/trade/', json=data)
+                    update_trade = requests.post(URL_DJANGO + 'update/trade/', json=data)
                     print(update_trade.status_code, update_trade.text)
                 for pay in pays:
                     kb_accept_order = InlineKeyboardMarkup(
@@ -68,8 +69,8 @@ async def check_trades(dp):
                             ]
                         ]
                     )
-                    get_active_agent = requests.get(URL_DJANGO + 'api/get/active/agents/')
-                    req_pay_info = requests.get(URL_DJANGO + f'api/pay/detail/{pay}/')
+                    get_active_agent = requests.get(URL_DJANGO + 'get/active/agents/')
+                    req_pay_info = requests.get(URL_DJANGO + f'pay/detail/{pay}/')
                     pay_info = req_pay_info.json()
                     for i in get_active_agent.json():
                         if i['paymethod_description'] == pay_info['paymethod_description']:
@@ -85,7 +86,7 @@ async def check_trades(dp):
                         'id': pay,
                         'is_send': True
                     }
-                    update_pay = requests.post(URL_DJANGO + 'api/update/pay/', json=data)
+                    update_pay = requests.post(URL_DJANGO + 'update/pay/', json=data)
                     print('dasdasdasd' + str(update_pay.status_code))
                     
             await asyncio.sleep(1)
@@ -102,3 +103,7 @@ async def on_startup(dispatcher):
 
 if __name__ == '__main__':
     executor.start_polling(dp, on_startup=on_startup)
+
+
+
+

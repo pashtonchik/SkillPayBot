@@ -1,8 +1,14 @@
 import asyncio
+from cgitb import text
+from email import header
+from wave import Wave_write
 from aiogram import types
 from aiogram.dispatcher.filters.builtin import CommandStart
+from keyboards.inline.mainMenu import kb_menu_main, kb_menu_job, kb_accept_order, kb_accept_payment
 from keyboards.inline.mainMenu import kb_menu_main, kb_menu_job
 from loader import dp
+import time
+import requests
 import json
 from aiogram.utils.callback_data import CallbackData
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
@@ -12,9 +18,13 @@ import random
 from settings import URL_DJANGO
 from states.activity.activity_state import Activity
 from aiogram.dispatcher import FSMContext
+from aiogram.dispatcher.filters import state
+
 import requests
 from jose import jws
 from jose.constants import ALGORITHMS
+
+from loader import bot
 
 trade_cb = CallbackData("trade", "type", "id", "action")
 
@@ -65,12 +75,12 @@ def authorization(key, email_bz):
 
 @dp.message_handler(CommandStart())
 async def bot_start(message: types.Message):
+    print('1')
     body = {
         'tg_id': message.from_user.id
     }
-
     r = requests.post(URL_DJANGO + 'get_agent_info/', json=body)
-
+    print(r.status_code)
     if r.status_code == 200:
         data = r.json()[0]
         print(data)

@@ -172,7 +172,8 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
     print(callback_data)
     if callback_data['type'] == 'BZ':
         id = callback_data['id']
-        get_trade_info = requests.get(URL_DJANGO + f'trade/detail/{id}')
+        get_trade_info = requests.get(URL_DJANGO + f'trade/detail/{id}/')
+        print(get_trade_info.status_code)
         if not get_trade_info.json()['trade']['agent'] or str(get_trade_info.json()['trade']['agent']) == str(
                 call.from_user.id):
             data = {
@@ -181,8 +182,8 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
             }
             set_agent_trade = requests.post(URL_DJANGO + f'update/trade/', json=data)
 
-            get_current_info = requests.get(URL_DJANGO + f'trade/detail/{id}')
-
+            get_current_info = requests.get(URL_DJANGO + f'trade/detail/{id}/')
+            print(get_current_info.status_code)
             if get_current_info.json()['trade']['agent'] == str(call.from_user.id):
                 kb_accept_payment = InlineKeyboardMarkup(
                     inline_keyboard=[
@@ -204,7 +205,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
                     'type': 'confirm-trade'
                 }
 
-                url = f'https://bitzlato.com/api/p2p/trade/{id}'
+                url = f'https://bitzlato.com/api/p2p/trade/{id}/'
                 try:
                     req_change_type = requests.post(url, headers=headers, proxies=proxy, json=data)
 
@@ -280,7 +281,7 @@ async def accept_payment(call: types.CallbackQuery, callback_data=dict, state=FS
 
     if callback_data['type'] == 'BZ':
 
-        get_current_info = requests.get(URL_DJANGO + f'trade/detail/{id}')
+        get_current_info = requests.get(URL_DJANGO + f'trade/detail/{id}/')
 
         headers = authorization(get_current_info.json()['user']['key'], get_current_info.json()['user']['email'])
 
@@ -290,7 +291,7 @@ async def accept_payment(call: types.CallbackQuery, callback_data=dict, state=FS
             'type': 'payment'
         }
 
-        url = f'https://bitzlato.bz/api/p2p/trade/{id}'
+        url = f'https://bitzlato.bz/api/p2p/trade/{id}/'
         try:
 
             req_change_type = requests.post(url, headers=headers, proxies=proxy, json=data)
@@ -317,7 +318,7 @@ async def get_photo(message: types.Message, state=FSMContext):
     if data['type'] == 'BZ' :
         id = data['id']
 
-        get_trade_detail = requests.get(URL_DJANGO + f'trade/detail/{id}')
+        get_trade_detail = requests.get(URL_DJANGO + f'trade/detail/{id}/')
         key = get_trade_detail.json()['user']['key']
         proxy = get_trade_detail.json()['user']['proxy']
         email = get_trade_detail.json()['user']['email']

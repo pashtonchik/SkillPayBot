@@ -12,87 +12,60 @@ from aiogram.utils.callback_data import CallbackData
 trade_cb = CallbackData("trade", "type", "id", "action")
 
 
-async def check_trades(dp):
-    
-    while 1:
-        try:
-            req_django = requests.get(URL_DJANGO + 'trades/active/')
-            print(req_django.json(), req_django.status_code)
-            if req_django.status_code == 200:
-                trades = req_django.json().get('trades', [])
-                pays = req_django.json().get('pays', [])
+def create_button_accept(trade_id, trade_type):
+    kb_accept_order = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(text='Принять заявку',
+                                     callback_data=trade_cb.new(id=trade_id,
+                                                                type='BZ' if trade_type == 'trade' else 'googleSheets',
+                                                                action='accept_trade'
+                                                                )
+                                     )
+            ]
+        ]
+    )
+    return kb_accept_order
 
-                for trade in trades:
-                    kb_accept_order = InlineKeyboardMarkup(
-                        inline_keyboard=[
-                            [
-                                InlineKeyboardButton(text='Принять заявку',
-                                                     callback_data=trade_cb.new(id=trade,
-                                                                                type='BZ',
-                                                                                action='accept_trade'
-                                                                                )
-                                                     )
-                            ]
-                        ]
-                    )
-                    get_active_agent = requests.get(URL_DJANGO + 'get/active/agents/')
-                    req_trade_info = requests.get(URL_DJANGO + f'trade/detail/{trade}/')
-                    print(req_trade_info.status_code, req_trade_info.text)
-                    trade_info = req_trade_info.json()
-                    
-                    for i in get_active_agent.json():
-                        if i['paymethod_description'] == trade_info['paymethod_description']:
-                            try:
-                                await bot.send_message(int(i['tg_id']), f'''
-    Новая сделка! Покупка {trade_info['trade']['cryptocurrency']} за {trade_info['trade']['currency']}
-    Сумма: {trade_info['trade']['currency_amount']} {trade_info['trade']['currency']}
-    ''', reply_markup=kb_accept_order)
-                            except Exception as e:
-                                print(e)
-                                continue
-                    data = {
-                                'id': trade,
-                                'is_send': True
-                            }
-                    update_trade = requests.post(URL_DJANGO + 'update/trade/', json=data)
-                    print(update_trade.status_code, update_trade.text)
-                for pay in pays:
-                    kb_accept_order = InlineKeyboardMarkup(
-                        inline_keyboard=[
-                            [
-                                InlineKeyboardButton(text='Принять заявку',
-                                                     callback_data=trade_cb.new(id=pay,
-                                                                                type='googleSheets',
-                                                                                action='accept_trade'
-                                                                                )
-                                                     )
-                            ]
-                        ]
-                    )
-                    get_active_agent = requests.get(URL_DJANGO + 'get/active/agents/')
-                    req_pay_info = requests.get(URL_DJANGO + f'pay/detail/{pay}/')
-                    pay_info = req_pay_info.json()
-                    for i in get_active_agent.json():
-                        if i['paymethod_description'] == pay_info['paymethod_description']:
-                            try:
-                                await bot.send_message(int(i['tg_id']), f'''
-    Новая сделка! Покупка 
-    Сумма: {pay_info['pay']['amount']} RUB
-    ''', reply_markup=kb_accept_order)
-                            except Exception as e:
-                                print(e)
-                                continue
-                    data = {
-                        'id': pay,
-                        'is_send': True
-                    }
-                    update_pay = requests.post(URL_DJANGO + 'update/pay/', json=data)
-                    print('dasdasdasd' + str(update_pay.status_code))
-                    
-            await asyncio.sleep(1)
-        except Exception as e:
-            print(type(e), ' ', e)
-            continue
+
+async def check_trades(dp):
+    while 1:
+        # try:
+        req_django = requests.get(URL_DJANGO + 'trades/active/')
+        print(req_django.status_code)
+        if req_django.status_code == 200:
+            trades = req_django.json()
+            print(trades)
+
+            for trade in trades:
+
+                operators = trade['recipients']
+
+                for operator in operators:
+                    if trade['type'] == 'trade':
+                        try:
+                            kb_accept_order = create_button_accept(trade_id=trade['data']['id'], trade_type=trade['type'])
+                            await bot.send_message(int(operator), f'''
+Новая сделка! Покупка {trade['data']['cryptocurrency']} за {trade['data']['currency']}
+Сумма: {trade['data']['currency_amount']} {trade['data']['currency']}
+''', reply_markup=kb_accept_order)
+                        except Exception as e:
+                            print('2', e)
+                            continue
+                    else:
+                        try:
+                            kb_accept_order = create_button_accept(trade_id=trade['data']['id'], trade_type=trade['type'])
+                            await bot.send_message(int(operator), f'''
+Новая сделка! Покупка 
+Сумма: {trade['pay']['amount']} RUB
+''', reply_markup=kb_accept_order)
+                        except Exception as e:
+                            print('1', e)
+                            continue
+        await asyncio.sleep(1)
+        # except Exception as e:
+        #     print('3', type(e), ' ', e)
+        #     continue
 
 
 async def on_startup(dispatcher):
@@ -103,7 +76,3 @@ async def on_startup(dispatcher):
 
 if __name__ == '__main__':
     executor.start_polling(dp, on_startup=on_startup)
-
-
-
-

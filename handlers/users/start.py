@@ -428,7 +428,7 @@ async def get_photo(message: types.Message, state=FSMContext):
                         'id': id,
                         'status': 'confirm_payment'
             }
-            update_pay = requests.post(URL_DJANGO + 'update/pay/', json=data)
+            update_pay = requests.post(URL_DJANGO + 'update/kf/trade/', json=data)
 
             body = {
                 'tg_id': message.from_user.id,

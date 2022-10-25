@@ -15,7 +15,7 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 import datetime
 import time
 import random
-from settings import URL_DJANGO
+from settings import URL_DJANGO, cheques_base
 from states.activity.activity_state import Activity
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import state
@@ -382,7 +382,7 @@ async def get_photo(message: types.Message, state=FSMContext):
 
         asyncio.create_task(confirm_payment(id=id, message=message, state=state))
     elif data['type'] == 'googleSheets':
-        file_name = f'/root/prod/SkillPay-Django/tgchecks/pay{id}_{message.from_user.id}.png'
+        file_name = cheques_base + f'pay{id}_{message.from_user.id}.png'
         await message.photo[-1].download(file_name)
         data = {
             'id': id,
@@ -416,7 +416,7 @@ async def get_photo(message: types.Message, state=FSMContext):
             await message.answer('Произошла ошибка при скачивании фото. Свяжитесь с админом.')
             await state.finish()
     elif data['type'] == 'kf':
-        file_name = f'/root/prod/SkillPay-Django/tgchecks/kf{id}_{message.from_user.id}.png'
+        file_name = cheques_base + f'kf{id}_{message.from_user.id}.png'
         await message.photo[-1].download(file_name)
         data = {
             'id': id,

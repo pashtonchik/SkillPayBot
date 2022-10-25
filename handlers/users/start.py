@@ -386,7 +386,7 @@ async def get_photo(message: types.Message, state=FSMContext):
         await message.photo[-1].download(file_name)
         data = {
             'id': id,
-            'cheque': f'tgchecks/{id}_{message.from_user.id}.png'
+            'cheque': f'tgchecks/pay{id}_{message.from_user.id}.png'
         }
         upload = requests.post(URL_DJANGO + 'update/pay/', json=data)
         if upload.status_code == 200:
@@ -420,7 +420,7 @@ async def get_photo(message: types.Message, state=FSMContext):
         await message.photo[-1].download(file_name)
         data = {
             'id': id,
-            'cheque': f'tgchecks/{id}_{message.from_user.id}.png'
+            'cheque': f'tgchecks/kf{id}_{message.from_user.id}.png'
         }
         upload = requests.post(URL_DJANGO + 'update/kf/trade/', json=data)
         if upload.status_code == 200:

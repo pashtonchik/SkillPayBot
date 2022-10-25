@@ -13,12 +13,18 @@ trade_cb = CallbackData("trade", "type", "id", "action")
 
 
 def create_button_accept(trade_id, trade_type):
+
+    if trade_type == 'trade':
+        trade_type = 'BZ'
+    elif trade_type == 'pay':
+        trade_type = 'googleSheets'
+
     kb_accept_order = InlineKeyboardMarkup(
         inline_keyboard=[
             [
                 InlineKeyboardButton(text='Принять заявку',
                                      callback_data=trade_cb.new(id=trade_id,
-                                                                type='BZ' if trade_type == 'trade' else 'googleSheets',
+                                                                type=trade_type,
                                                                 action='accept_trade'
                                                                 )
                                      )
@@ -52,13 +58,25 @@ async def check_trades(dp):
                         except Exception as e:
                             print('2', e)
                             continue
-                    else:
+                    elif trade['type'] == 'trade':
                         try:
                             kb_accept_order = create_button_accept(trade_id=trade['data']['id'], trade_type=trade['type'])
                             await bot.send_message(int(operator), f'''
 Новая сделка! Покупка 
-Сумма: {trade['pay']['amount']} RUB
+Сумма: {trade['data']['amount']} RUB
 ''', reply_markup=kb_accept_order)
+                        except Exception as e:
+                            print('1', e)
+                            continue
+                    else:
+                        try:
+                            kb_accept_order = create_button_accept(trade_id=trade['data']['id'],
+                                                                   trade_type=trade['type'])
+                            await bot.send_message(int(operator), f'''
+KF                          
+Новая сделка! Покупка 
+Сумма: {trade['data']['amount']} RUB
+                        ''', reply_markup=kb_accept_order)
                         except Exception as e:
                             print('1', e)
                             continue

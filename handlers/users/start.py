@@ -4,7 +4,7 @@ from email import header
 from wave import Wave_write
 from aiogram import types
 from aiogram.dispatcher.filters.builtin import CommandStart
-from keyboards.inline.mainMenu import kb_menu_main, kb_menu_job, kb_accept_order, kb_accept_payment
+from keyboards.inline.mainMenu import kb_menu_main, kb_menu_job, kb_accept_order
 from keyboards.inline.mainMenu import kb_menu_main, kb_menu_job
 from loader import dp
 import time
@@ -27,6 +27,19 @@ from jose.constants import ALGORITHMS
 from loader import bot
 
 trade_cb = CallbackData("trade", "type", "id", "action")
+
+
+def create_accept_kb(trade_id, trade_type):
+    kb_accept_payment = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(text='Оплатил',
+                                     callback_data=trade_cb.new(id=trade_id, type=trade_type,
+                                                                action='accept_payment'))
+            ]
+        ]
+    )
+    return kb_accept_payment
 
 
 async def confirm_payment(id, message, state):
@@ -170,30 +183,23 @@ async def start_job(call: types.CallbackQuery):
 async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSMContext):
     print('accept')
     print(callback_data)
+    trade_id = callback_data['id']
+    data = {
+        'id': str(trade_id),
+        'agent': str(call.from_user.id)
+    }
+    kb_accept_payment = create_accept_kb(trade_id, callback_data['type'])
     if callback_data['type'] == 'BZ':
-        id = callback_data['id']
-        get_trade_info = requests.get(URL_DJANGO + f'trade/detail/{id}/')
+        get_trade_info = requests.get(URL_DJANGO + f'trade/detail/{trade_id}/')
         print(get_trade_info.status_code)
         if not get_trade_info.json()['trade']['agent'] or str(get_trade_info.json()['trade']['agent']) == str(
                 call.from_user.id):
-            data = {
-                'id': str(id),
-                'agent': str(call.from_user.id)
-            }
+
             set_agent_trade = requests.post(URL_DJANGO + f'update/trade/', json=data)
 
-            get_current_info = requests.get(URL_DJANGO + f'trade/detail/{id}/')
+            get_current_info = requests.get(URL_DJANGO + f'trade/detail/{trade_id}/')
             print(get_current_info.status_code)
             if get_current_info.json()['trade']['agent'] == str(call.from_user.id):
-                kb_accept_payment = InlineKeyboardMarkup(
-                    inline_keyboard=[
-                        [
-                            InlineKeyboardButton(text='Оплатил', callback_data=trade_cb.new(id=id, type='BZ',
-                                                                                            action='accept_payment'))
-                        ]
-                    ]
-                )
-
                 headers = authorization(
                     get_current_info.json()['user']['key'],
                     get_current_info.json()['user']['email']
@@ -205,7 +211,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
                     'type': 'confirm-trade'
                 }
 
-                url = f'https://bitzlato.com/api/p2p/trade/{id}/'
+                url = f'https://bitzlato.com/api/p2p/trade/{trade_id}/'
                 try:
                     req_change_type = requests.post(url, headers=headers, proxies=proxy, json=data)
 
@@ -231,36 +237,59 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
             await call.answer("Заявка уже в работе", show_alert=True)
             await call.message.delete()
     elif callback_data['type'] == 'googleSheets':
-        id = callback_data['id']
-        get_pay_info = requests.get(URL_DJANGO + f'pay/detail/{id}/')
+        get_pay_info = requests.get(URL_DJANGO + f'pay/detail/{trade_id}/')
         print(get_pay_info.status_code)
-        if not get_pay_info.json()['pay']['agent'] or str(get_pay_info.json()['pay']['agent']['tg_id']) == str(
+        if not get_pay_info.json()['pay']['agent'] or str(get_pay_info.json()['pay']['agent']) == str(
                 call.from_user.id):
-            data = {
-                'id': str(id),
-                'agent': str(call.from_user.id)
-            }
+
             set_agent_trade = requests.post(URL_DJANGO + f'update/pay/', json=data)
 
-            get_current_info = requests.get(URL_DJANGO + f'pay/detail/{id}/')
+            get_current_info = requests.get(URL_DJANGO + f'pay/detail/{trade_id}/')
 
             print(get_current_info.json())
             print(call.from_user.id)
-            if str(get_current_info.json()['pay']['agent']['tg_id']) == str(call.from_user.id):
-                kb_accept_payment = InlineKeyboardMarkup(
-                    inline_keyboard=[
-                        [
-                            InlineKeyboardButton(text='Оплатил', callback_data=trade_cb.new(id=id, type='googleSheets', action='accept_payment'))
-                        ]
-                    ]
-                )
+            if str(get_current_info.json()['pay']['agent']) == str(call.from_user.id):
                 try:
                     await call.answer('Вы успешно взяли заявку в работу!', show_alert=True)
                     await call.message.edit_text(f'''
-            Переведите {get_current_info.json()['pay']['amount']} RUB
-            Реквизиты: {get_current_info.json()['pay']['card_number']} {get_current_info.json()['paymethod_description']}
+Переведите {get_current_info.json()['pay']['amount']} RUB
+Реквизиты: {get_current_info.json()['pay']['card_number']} {get_current_info.json()['paymethod_description']}
 
-            После перевода нажмите кнопку "Оплатил"
+После перевода нажмите кнопку "Оплатил"
+            ''', reply_markup=kb_accept_payment)
+                    await Activity.acceptOrder.set()
+                except Exception as e:
+                    await call.answer('Произошла ошибка, нажмите кнопку заново.')
+
+            else:
+                await call.answer("Заявка уже в работе", show_alert=True)
+                await call.message.delete()
+
+        else:
+            await call.answer('Заявка уже в работе.', show_alert=True)
+            await call.message.delete()
+
+    elif callback_data['type'] == 'kf':
+        get_pay_info = requests.get(URL_DJANGO + f'kf/trade/detail/{trade_id}/')
+        print(get_pay_info.status_code)
+        if not get_pay_info.json()['kftrade']['agent'] or str(get_pay_info.json()['kftrade']['agent']) == str(
+                call.from_user.id):
+
+            set_agent_trade = requests.post(URL_DJANGO + f'update/kf/trade/', json=data)
+
+            get_current_info = requests.get(URL_DJANGO + f'kf/trade/detail/{trade_id}/')
+
+            print(get_current_info.json())
+            print(call.from_user.id)
+            if str(get_current_info.json()['kftrade']['agent']) == str(call.from_user.id):
+                try:
+                    await call.answer('Вы успешно взяли заявку в работу!', show_alert=True)
+                    await call.message.edit_text(f'''
+KF
+Переведите {get_current_info.json()['kftrade']['amount']} RUB
+Реквизиты: {get_current_info.json()['kftrade']['card_number']} {get_current_info.json()['paymethod_description']}
+
+После перевода нажмите кнопку "Оплатил"
             ''', reply_markup=kb_accept_payment)
                     await Activity.acceptOrder.set()
                 except Exception as e:
@@ -309,6 +338,11 @@ async def accept_payment(call: types.CallbackQuery, callback_data=dict, state=FS
         await call.message.answer('Пришлите чек о переводе в виде изображения.')
         await state.update_data(id=id, type='googleSheets')
         await Activity.acceptPayment.set()
+    elif callback_data['type'] == 'kf':
+        get_current_info = requests.get(URL_DJANGO + f'kf/trade/detail/{id}/')
+        await call.message.answer('KF   Пришлите чек о переводе в виде изображения.')
+        await state.update_data(id=id, type='kf')
+        await Activity.acceptPayment.set()
 
 
 @dp.message_handler(content_types=['photo'], state=Activity.acceptPayment)
@@ -348,13 +382,47 @@ async def get_photo(message: types.Message, state=FSMContext):
 
         asyncio.create_task(confirm_payment(id=id, message=message, state=state))
     elif data['type'] == 'googleSheets':
-        file_name = f'/root/prod/SkillPay-Django/tgchecks/{id}_{message.from_user.id}.png'
+        file_name = f'/root/prod/SkillPay-Django/tgchecks/pay{id}_{message.from_user.id}.png'
         await message.photo[-1].download(file_name)
         data = {
             'id': id,
             'cheque': f'tgchecks/{id}_{message.from_user.id}.png'
         }
         upload = requests.post(URL_DJANGO + 'update/pay/', json=data)
+        if upload.status_code == 200:
+            data = {
+                        'id': id,
+                        'status': 'confirm_payment'
+            }
+            update_pay = requests.post(URL_DJANGO + 'update/pay/', json=data)
+
+            body = {
+                'tg_id': message.from_user.id,
+                'options': {
+                    'is_working_now': False,
+                    'is_instead': True,
+                }
+            }
+
+            change_status_agent = requests.post(URL_DJANGO + 'edit_agent_status/', json=body)
+
+            if change_status_agent.status_code == 200 and update_pay.status_code == 200:
+                await message.reply('Чек принят! Сделка завершена, ожидайте следующую.')
+            else:
+                await message.answer('Произошла ошибка, свяжитесь с админом.')
+
+            await state.finish()
+        else:
+            await message.answer('Произошла ошибка при скачивании фото. Свяжитесь с админом.')
+            await state.finish()
+    elif data['type'] == 'kf':
+        file_name = f'/root/prod/SkillPay-Django/tgchecks/kf{id}_{message.from_user.id}.png'
+        await message.photo[-1].download(file_name)
+        data = {
+            'id': id,
+            'cheque': f'tgchecks/{id}_{message.from_user.id}.png'
+        }
+        upload = requests.post(URL_DJANGO + 'update/kf/trade/', json=data)
         if upload.status_code == 200:
             data = {
                         'id': id,

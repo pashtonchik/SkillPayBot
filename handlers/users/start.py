@@ -278,7 +278,8 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
             set_agent_trade = requests.post(URL_DJANGO + f'update/kf/trade/', json=data)
 
             get_current_info = requests.get(URL_DJANGO + f'kf/trade/detail/{trade_id}/')
-
+            while '*' in get_current_info.json()['kftrade']['cardnumber']:
+                get_current_info = requests.get(URL_DJANGO + f'kf/trade/detail/{trade_id}/')
             print(get_current_info.json())
             print(call.from_user.id)
             if str(get_current_info.json()['kftrade']['agent']) == str(call.from_user.id):

@@ -280,6 +280,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
             get_current_info = requests.get(URL_DJANGO + f'kf/trade/detail/{trade_id}/')
             while '*' in get_current_info.json()['kftrade']['card_number']:
                 get_current_info = requests.get(URL_DJANGO + f'kf/trade/detail/{trade_id}/')
+                await asyncio.sleep(1)
             print(get_current_info.json())
             print(call.from_user.id)
             if str(get_current_info.json()['kftrade']['agent']) == str(call.from_user.id):

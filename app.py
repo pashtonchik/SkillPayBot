@@ -58,7 +58,7 @@ async def check_trades(dp):
                         except Exception as e:
                             print('2', e)
                             continue
-                    elif trade['type'] == 'trade':
+                    elif trade['type'] == 'pay':
                         try:
                             kb_accept_order = create_button_accept(trade_id=trade['data']['id'], trade_type=trade['type'])
                             await bot.send_message(int(operator), f'''

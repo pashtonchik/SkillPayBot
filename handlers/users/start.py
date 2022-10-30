@@ -342,16 +342,23 @@ async def accept_payment(call: types.CallbackQuery, callback_data=dict, state=FS
         await Activity.acceptPayment.set()
     elif callback_data['type'] == 'kf':
         get_current_info = requests.get(URL_DJANGO + f'kf/trade/detail/{id}/')
-        await call.message.answer('KF   Пришлите чек о переводе в виде изображения.')
+        await call.message.answer('KF   Пришлите чек о переводе в формате pdf (обязательно).')
         await state.update_data(id=id, type='kf')
         await Activity.acceptPayment.set()
 
 
-@dp.message_handler(content_types=['photo'], state=Activity.acceptPayment)
+@dp.message_handler(content_types=['photo', 'document'], state=Activity.acceptPayment)
 async def get_photo(message: types.Message, state=FSMContext):
     data = await state.get_data()
     id = data['id']
-    if data['type'] == 'BZ' :
+    body = {
+        'tg_id': message.from_user.id,
+        'options': {
+            'is_working_now': False,
+            'is_instead': True,
+        }
+    }
+    if data['type'] == 'BZ':
         id = data['id']
 
         get_trade_detail = requests.get(URL_DJANGO + f'trade/detail/{id}/')
@@ -398,14 +405,6 @@ async def get_photo(message: types.Message, state=FSMContext):
             }
             update_pay = requests.post(URL_DJANGO + 'update/pay/', json=data)
 
-            body = {
-                'tg_id': message.from_user.id,
-                'options': {
-                    'is_working_now': False,
-                    'is_instead': True,
-                }
-            }
-
             change_status_agent = requests.post(URL_DJANGO + 'edit_agent_status/', json=body)
 
             if change_status_agent.status_code == 200 and update_pay.status_code == 200:
@@ -418,39 +417,35 @@ async def get_photo(message: types.Message, state=FSMContext):
             await message.answer('Произошла ошибка при скачивании фото. Свяжитесь с админом.')
             await state.finish()
     elif data['type'] == 'kf':
-        file_name = cheques_base + f'kf{id}_{message.from_user.id}.png'
-        await message.photo[-1].download(file_name)
-        data = {
-            'id': id,
-            'cheque': f'tgchecks/kf{id}_{message.from_user.id}.png'
-        }
-        upload = requests.post(URL_DJANGO + 'update/kf/trade/', json=data)
-        if upload.status_code == 200:
+        file_name = cheques_base + f'kf{id}_{message.from_user.id}.pdf'
+        if message.content_type == 'document':
+            await message.document.download(destination_file=file_name)
             data = {
-                        'id': id,
-                        'status': 'confirm_payment'
+                'id': id,
+                'cheque': f'kf_checks/kf{id}_{message.from_user.id}.pdf'
             }
-            update_pay = requests.post(URL_DJANGO + 'update/kf/trade/', json=data)
-
-            body = {
-                'tg_id': message.from_user.id,
-                'options': {
-                    'is_working_now': False,
-                    'is_instead': True,
+            upload = requests.post(URL_DJANGO + 'update/kf/trade/', json=data)
+            if upload.status_code == 200:
+                data = {
+                    'id': id,
+                    'status': 'confirm_payment'
                 }
-            }
+                update_pay = requests.post(URL_DJANGO + 'update/kf/trade/', json=data)
 
-            change_status_agent = requests.post(URL_DJANGO + 'edit_agent_status/', json=body)
+                change_status_agent = requests.post(URL_DJANGO + 'edit_agent_status/', json=body)
 
-            if change_status_agent.status_code == 200 and update_pay.status_code == 200:
-                await message.reply('Чек принят! Сделка завершена, ожидайте следующую.')
+                if change_status_agent.status_code == 200 and update_pay.status_code == 200:
+                    await message.reply('Чек принят! Сделка завершена, ожидайте следующую.')
+                else:
+                    await message.answer('Произошла ошибка, свяжитесь с админом.')
+
+                await state.finish()
             else:
-                await message.answer('Произошла ошибка, свяжитесь с админом.')
-
-            await state.finish()
+                await message.answer('Произошла ошибка при скачивании документа. Свяжитесь с админом.')
+                await state.finish()
         else:
-            await message.answer('Произошла ошибка при скачивании фото. Свяжитесь с админом.')
-            await state.finish()
+            await message.reply(text='Вы отправили чек не в том формате, пришлите заново в формате pdf')
+
 
 
 @dp.callback_query_handler(text='Назад')

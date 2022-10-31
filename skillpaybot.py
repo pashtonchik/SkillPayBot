@@ -73,8 +73,8 @@ async def check_trades(dp):
                             kb_accept_order = create_button_accept(trade_id=trade['data']['id'],
                                                                    trade_type=trade['type'])
                             await bot.send_message(int(operator), f'''
-KF                          
-Новая сделка! Покупка 
+Заявка KF - {trade['data']['id']}                     
+Инструмент: {trade['data']['type']}
 Сумма: {trade['data']['amount']} RUB
                         ''', reply_markup=kb_accept_order)
                         except Exception as e:

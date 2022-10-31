@@ -418,7 +418,7 @@ async def get_photo(message: types.Message, state=FSMContext):
             await state.finish()
     elif data['type'] == 'kf':
         file_name = cheques_base + f'kf{id}_{message.from_user.id}.pdf'
-        if message.content_type == 'document':
+        if message.content_type == 'document' and message.document.file_name.split('.')[1] == 'pdf':
             await message.document.download(destination_file=file_name)
             data = {
                 'id': id,

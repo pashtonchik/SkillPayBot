@@ -8,6 +8,9 @@ from utils.notify_admins import on_startup_notify
 from utils.set_bot_commands import set_default_commands
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.callback_data import CallbackData
+from datetime import datetime
+
+
 
 trade_cb = CallbackData("trade", "type", "id", "action")
 
@@ -80,7 +83,23 @@ async def check_trades(dp):
                         except Exception as e:
                             print('1', e)
                             continue
+        
+        
+        req_kftrades = requests.get(URL_DJANGO + 'get/free/kftrades/')
+        kf_trades = req_kftrades.json()
+        for trade in kf_trades:
+            time_add_kf = datetime.strptime(trade['date_create'].split('.')[0], "%Y-%m-%dT%H:%M:%S").timestamp()
+            time_now = datetime.now().timestamp()
+            if time_now - time_add_kf > 900:
+                data = {
+                    'id': trade['id'],
+                    'status': 'time_cancel',
+                }
+                
+                update_status = requests.post(URL_DJANGO + 'update/kf/trade/', json=data)
+                
         await asyncio.sleep(1)
+        
         # except Exception as e:
         #     print('3', type(e), ' ', e)
         #     continue

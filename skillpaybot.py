@@ -34,7 +34,8 @@ def delete_from_database(u_id, msg_id, trade_id):
     con.commit()
     con.close()
 
-def select_from_databases()
+def select_from_databases():
+    pass
 
 def create_button_accept(trade_id, trade_type):
 
@@ -96,7 +97,8 @@ async def check_trades(dp):
                     
                     try: 
                         message = await bot.send_message(int(operator), create_message_text(trade), reply_markup=kb_accept_order)
-                        print(message.from_id)                    except Exception as e:
+                        print(message.message_id, message.chat.id, trade['data']['id'])                    
+                    except Exception as e:
                         print(e)
                         continue
                     

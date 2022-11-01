@@ -9,11 +9,32 @@ from utils.set_bot_commands import set_default_commands
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.callback_data import CallbackData
 from datetime import datetime
-
-
+import sqlite3
 
 trade_cb = CallbackData("trade", "type", "id", "action")
 
+def init_database():
+    con = sqlite3.connect("message.db")
+    cur = con.cursor()
+    cur.execute("""CREATE TABLE IF NOT EXISTS messages (u_id INT, msg_id INT, trade_id INT)""")
+    con.commit()
+    con.close()
+
+def add_to_database(u_id, msg_id, trade_id):
+    con = sqlite3.connect("message.db")
+    cur = con.cursor()
+    cur.execute(f"""INSERT INTO messages (u_id, msg_id, trade_id) values ({u_id}, {msg_id}, {trade_id})""")
+    con.commit()
+    con.close()
+
+def delete_from_database(u_id, msg_id, trade_id):
+    con = sqlite3.connect("message.db")
+    cur = con.cursor()
+    cur.execute(f"""DELETE FROM messages WHERE u_id={u_id} and msg_id={msg_id} and trade_id={trade_id})""")
+    con.commit()
+    con.close()
+
+def select_from_databases()
 
 def create_button_accept(trade_id, trade_type):
 
@@ -75,11 +96,10 @@ async def check_trades(dp):
                     
                     try: 
                         message = await bot.send_message(int(operator), create_message_text(trade), reply_markup=kb_accept_order)
-                        print(message)
-                    except Exception as e:
+                        print(message.from_id)                    except Exception as e:
                         print(e)
                         continue
-        
+                    
         req_kftrades = requests.get(URL_DJANGO + 'get/free/kftrades/')
         kf_trades = req_kftrades.json()
 
@@ -108,4 +128,5 @@ async def on_startup(dispatcher):
 
 
 if __name__ == '__main__':
+    init_database()
     executor.start_polling(dp, on_startup=on_startup)

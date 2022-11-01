@@ -472,19 +472,26 @@ async def get_photo(message: types.Message, state=FSMContext):
             }
             upload = requests.post(URL_DJANGO + 'update/kf/trade/', json=data)
             if upload.status_code == 200:
-                data = {
-                    'id': id,
-                    'status': 'confirm_payment'
-                }
-                update_pay = requests.post(URL_DJANGO + 'update/kf/trade/', json=data)
+                await message.answer('Ожидание подтверждения чека...')
+                while 1:
+                    req_django = requests.get(URL_DJANGO + f'kf/trade/detail/{id}/')
+                    if (req_django.status_code == 200):
+                        if (req_django.json()['kftrade']['status'] == 'confirm_payment'):
+                            change_status_agent = requests.post(URL_DJANGO + 'edit_agent_status/', json=body)
 
-                change_status_agent = requests.post(URL_DJANGO + 'edit_agent_status/', json=body)
+                            if change_status_agent.status_code == 200 and update_pay.status_code == 200:
+                                await message.reply('Чек принят! Сделка завершена, ожидайте следующую.')
+                            else:
+                                await message.answer('Произошла ошибка, свяжитесь с админом.')
 
-                if change_status_agent.status_code == 200 and update_pay.status_code == 200:
-                    await message.reply('Чек принят! Сделка завершена, ожидайте следующую.')
-                else:
-                    await message.answer('Произошла ошибка, свяжитесь с админом.')
 
+                # data = {
+                #     'id': id,
+                #     'status': 'confirm_payment'
+                # }
+                # update_pay = requests.post(URL_DJANGO + 'update/kf/trade/', json=data)
+
+                
                 await state.finish()
             else:
                 await message.answer('Произошла ошибка при скачивании документа. Свяжитесь с админом.')

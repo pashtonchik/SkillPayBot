@@ -291,7 +291,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
         get_pay_info = requests.get(URL_DJANGO + f'kf/trade/detail/{trade_id}/')
         print(get_pay_info.status_code)
         if (not get_pay_info.json()['kftrade']['agent'] or str(get_pay_info.json()['kftrade']['agent']) == str(
-                call.from_user.id)) and get_pay_info['kftrade']['status'] != 'closed':
+                call.from_user.id)) and get_pay_info.json()['kftrade']['status'] != 'closed':
 
             set_agent_trade = requests.post(URL_DJANGO + f'update/kf/trade/', json=data)
 

@@ -303,6 +303,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
             #     await asyncio.sleep(1)
             print(get_current_info.json())
             print(call.from_user.id)
+            print(get_current_info.json())
             if str(get_current_info.json()['kftrade']['agent']) == str(call.from_user.id):
                 try:
                     await call.answer('Вы успешно взяли заявку в работу!', show_alert=True)

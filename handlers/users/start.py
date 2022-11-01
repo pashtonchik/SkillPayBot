@@ -206,7 +206,6 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
         'id': str(trade_id),
         'agent': str(call.from_user.id)
     }
-    time_accept = datetime.datetime.now().timestamp()
     kb_accept_payment = create_accept_kb(trade_id, callback_data['type'])
     kb_accept_kf_payment = create_kf_accept_kb(trade_id, callback_data['type'])
     if callback_data['type'] == 'BZ':
@@ -292,13 +291,9 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
     elif callback_data['type'] == 'kf':
         get_pay_info = requests.get(URL_DJANGO + f'kf/trade/detail/{trade_id}/')
         print(get_pay_info.status_code)
-        time_add_kf = datetime.datetime.strptime(get_pay_info.json()['kftrade']['date_create'].split('.')[0], "%Y-%m-%dT%H:%M:%S").timestamp()
-        time_in_work = get_pay_info.json()['kftrade']['time_in_work']
-        delta = time_accept - time_add_kf - time_in_work
         if (not get_pay_info.json()['kftrade']['agent'] or str(get_pay_info.json()['kftrade']['agent']) == str(
                 call.from_user.id)) and \
-                get_pay_info.json()['kftrade']['status'] != 'closed'\
-                and delta <= 120:
+                get_pay_info.json()['kftrade']['status'] != 'closed':
 
             set_agent_trade = requests.post(URL_DJANGO + f'update/kf/trade/', json=data)
 
@@ -312,29 +307,19 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
                 try:
                     await call.answer('Вы успешно взяли заявку в работу!', show_alert=True)
                     await call.message.edit_text(f'''
-KF {delta}
+KF
 Переведите {get_current_info.json()['kftrade']['amount']} RUB
 Реквизиты: {get_current_info.json()['kftrade']['card_number']} {get_current_info.json()['paymethod_description']}
 
 После перевода нажмите кнопку "Оплатил"
             ''', reply_markup=kb_accept_kf_payment)
                     await Activity.acceptOrder.set()
-                    await state.update_data(time_start=time_accept)
                 except Exception as e:
                     await call.answer('Произошла ошибка, нажмите кнопку заново.')
 
             else:
                 await call.answer("Заявка уже в работе", show_alert=True)
                 await call.message.delete()
-        elif delta > 120:
-            await call.answer('Время истекло', show_alert=True)
-            await call.message.delete()
-            data = {
-                'id': trade_id,
-                'status': 'time_cancel',
-            }
-            update_status = requests.post(URL_DJANGO + 'update/kf/trade/', json=data)
-
         else:
             await call.answer('Заявка уже в работе.', show_alert=True)
             await call.message.delete()
@@ -383,8 +368,6 @@ async def accept_payment(call: types.CallbackQuery, callback_data=dict, state=FS
 @dp.callback_query_handler(trade_cb.filter(action=['cancel_payment']), state=Activity.acceptOrder)
 async def accept_payment(call: types.CallbackQuery, callback_data=dict, state=FSMContext):
     id = str(callback_data['id'])
-    state_data = await state.get_data()
-    time_in_work = int(datetime.datetime.now().timestamp() - state_data['time_start'])
     if callback_data['type'] == 'kf':
 
         get_current_info = requests.get(URL_DJANGO + f'kf/trade/detail/{id}/')
@@ -393,7 +376,6 @@ async def accept_payment(call: types.CallbackQuery, callback_data=dict, state=FS
 
         data = {
             'id': id,
-            'time_in_work': time_in_work,
             'status': 'cancel_by_operator',
         }
         update_status = requests.post(URL_DJANGO + 'update/kf/trade/', json=data)

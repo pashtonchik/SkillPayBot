@@ -291,8 +291,6 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
     elif callback_data['type'] == 'kf':
         get_pay_info = requests.get(URL_DJANGO + f'kf/trade/detail/{trade_id}/')
         print(get_pay_info.status_code)
-        time_now = datetime.datetime.now()
-        delta = datetime.datetime.now() - get_pay_info.json()['kftrade']['date_create'] - get_pay_info.json()['kftrade']['time_in_work']
         if (not get_pay_info.json()['kftrade']['agent'] or str(get_pay_info.json()['kftrade']['agent']) == str(
                 call.from_user.id)) and \
                 get_pay_info.json()['kftrade']['status'] != 'closed':
@@ -300,16 +298,16 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
             set_agent_trade = requests.post(URL_DJANGO + f'update/kf/trade/', json=data)
 
             get_current_info = requests.get(URL_DJANGO + f'kf/trade/detail/{trade_id}/')
-            while '*' in get_current_info.json()['kftrade']['card_number']:
-                get_current_info = requests.get(URL_DJANGO + f'kf/trade/detail/{trade_id}/')
-                await asyncio.sleep(1)
+            # while '*' in get_current_info.json()['kftrade']['card_number']:
+            #     get_current_info = requests.get(URL_DJANGO + f'kf/trade/detail/{trade_id}/')
+            #     await asyncio.sleep(1)
             print(get_current_info.json())
             print(call.from_user.id)
             if str(get_current_info.json()['kftrade']['agent']) == str(call.from_user.id):
                 try:
                     await call.answer('Вы успешно взяли заявку в работу!', show_alert=True)
                     await call.message.edit_text(f'''
-KF {delta}
+KF
 Переведите {get_current_info.json()['kftrade']['amount']} RUB
 Реквизиты: {get_current_info.json()['kftrade']['card_number']} {get_current_info.json()['paymethod_description']}
 
@@ -322,7 +320,6 @@ KF {delta}
             else:
                 await call.answer("Заявка уже в работе", show_alert=True)
                 await call.message.delete()
-
         else:
             await call.answer('Заявка уже в работе.', show_alert=True)
             await call.message.delete()
@@ -331,7 +328,6 @@ KF {delta}
 @dp.callback_query_handler(trade_cb.filter(action=['accept_payment']), state=Activity.acceptOrder)
 async def accept_payment(call: types.CallbackQuery, callback_data=dict, state=FSMContext):
     id = str(callback_data['id'])
-
     if callback_data['type'] == 'BZ':
 
         get_current_info = requests.get(URL_DJANGO + f'trade/detail/{id}/')
@@ -372,7 +368,10 @@ async def accept_payment(call: types.CallbackQuery, callback_data=dict, state=FS
 @dp.callback_query_handler(trade_cb.filter(action=['cancel_payment']), state=Activity.acceptOrder)
 async def accept_payment(call: types.CallbackQuery, callback_data=dict, state=FSMContext):
     id = str(callback_data['id'])
+<<<<<<< HEAD
     print(id)
+=======
+>>>>>>> 3c77975d06c471ec9846dd230281697809d9e8cf
     if callback_data['type'] == 'kf':
 
         get_current_info = requests.get(URL_DJANGO + f'kf/trade/detail/{id}/')

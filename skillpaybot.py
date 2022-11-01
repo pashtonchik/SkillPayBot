@@ -87,6 +87,7 @@ async def check_trades(dp):
         
         req_kftrades = requests.get(URL_DJANGO + 'get/free/kftrades/')
         kf_trades = req_kftrades.json()
+
         for trade in kf_trades:
             time_add_kf = datetime.strptime(trade['date_create'].split('.')[0], "%Y-%m-%dT%H:%M:%S").timestamp()
             time_now = datetime.now().timestamp()

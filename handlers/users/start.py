@@ -479,7 +479,7 @@ async def get_photo(message: types.Message, state=FSMContext):
                                 await message.reply('Чек принят! Сделка завершена, ожидайте следующую.')
                             else:
                                 await message.answer('Произошла ошибка, свяжитесь с админом.')
-
+                            break
 
                 # data = {
                 #     'id': id,

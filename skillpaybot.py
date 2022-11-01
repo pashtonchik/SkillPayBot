@@ -36,6 +36,24 @@ def create_button_accept(trade_id, trade_type):
     )
     return kb_accept_order
 
+def create_message_text(trade):
+    if trade['type'] == 'trade':
+        messageText = f'''
+Новая сделка! Покупка {trade['data']['cryptocurrency']} за {trade['data']['currency']}
+Сумма: {trade['data']['currency_amount']} {trade['data']['currency']}
+'''
+    elif trade['type'] == 'pay':
+        messageText = f'''
+Новая сделка! Покупка 
+Сумма: {trade['data']['amount']} RUB
+'''
+    else:   
+        messageText = f'''
+Заявка KF - {trade['data']['id']}                     
+Инструмент: {trade['data']['type']}
+Сумма: {trade['data']['amount']} RUB
+                        '''
+    return messageText
 
 async def check_trades(dp):
     while 1:
@@ -49,41 +67,18 @@ async def check_trades(dp):
             for trade in trades:
 
                 operators = trade['recipients']
+                
+                kb_accept_order = create_button_accept(trade_id=trade['data']['id'],
+                                                                   trade_type=trade['type'])
 
                 for operator in operators:
-                    if trade['type'] == 'trade':
-                        try:
-                            kb_accept_order = create_button_accept(trade_id=trade['data']['id'], trade_type=trade['type'])
-                            await bot.send_message(int(operator), f'''
-Новая сделка! Покупка {trade['data']['cryptocurrency']} за {trade['data']['currency']}
-Сумма: {trade['data']['currency_amount']} {trade['data']['currency']}
-''', reply_markup=kb_accept_order)
-                        except Exception as e:
-                            print('2', e)
-                            continue
-                    elif trade['type'] == 'pay':
-                        try:
-                            kb_accept_order = create_button_accept(trade_id=trade['data']['id'], trade_type=trade['type'])
-                            await bot.send_message(int(operator), f'''
-Новая сделка! Покупка 
-Сумма: {trade['data']['amount']} RUB
-''', reply_markup=kb_accept_order)
-                        except Exception as e:
-                            print('1', e)
-                            continue
-                    else:
-                        try:
-                            kb_accept_order = create_button_accept(trade_id=trade['data']['id'],
-                                                                   trade_type=trade['type'])
-                            await bot.send_message(int(operator), f'''
-Заявка KF - {trade['data']['id']}                     
-Инструмент: {trade['data']['type']}
-Сумма: {trade['data']['amount']} RUB
-                        ''', reply_markup=kb_accept_order)
-                        except Exception as e:
-                            print('1', e)
-                            continue
-        
+                    
+                    try: 
+                        message = await bot.send_message(int(operator), create_message_text(trade), reply_markup=kb_accept_order)
+                        print(message)
+                    except Exception as e:
+                        print(e)
+                        continue
         
         req_kftrades = requests.get(URL_DJANGO + 'get/free/kftrades/')
         kf_trades = req_kftrades.json()
@@ -98,7 +93,7 @@ async def check_trades(dp):
                 }
                 
                 update_status = requests.post(URL_DJANGO + 'update/kf/trade/', json=data)
-                
+
         await asyncio.sleep(1)
         
         # except Exception as e:

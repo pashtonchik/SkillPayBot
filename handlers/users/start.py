@@ -41,6 +41,23 @@ def create_accept_kb(trade_id, trade_type):
     )
     return kb_accept_payment
 
+def create_kf_accept_kb(trade_id, trade_type):
+    kb_accept_payment = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(text='Оплатил',
+                                     callback_data=trade_cb.new(id=trade_id, type=trade_type,
+                                                                action='accept_payment'))
+            ],
+            [
+                InlineKeyboardButton(text='Отменить сделку',
+                                     callback_data=trade_cb.new(id=trade_id, type=trade_type,
+                                                                action='cancel_payment'))
+            ]
+        ]
+    )
+    return kb_accept_payment
+
 
 async def confirm_payment(id, message, state):
     while 1:
@@ -189,6 +206,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
         'agent': str(call.from_user.id)
     }
     kb_accept_payment = create_accept_kb(trade_id, callback_data['type'])
+    kb_accept_kf_payment = create_kf_accept_kb(trade_id, callback_data['type'])
     if callback_data['type'] == 'BZ':
         get_trade_info = requests.get(URL_DJANGO + f'trade/detail/{trade_id}/')
         print(get_trade_info.status_code)
@@ -292,7 +310,7 @@ KF
 Реквизиты: {get_current_info.json()['kftrade']['card_number']} {get_current_info.json()['paymethod_description']}
 
 После перевода нажмите кнопку "Оплатил"
-            ''', reply_markup=kb_accept_payment)
+            ''', reply_markup=kb_accept_kf_payment)
                     await Activity.acceptOrder.set()
                 except Exception as e:
                     await call.answer('Произошла ошибка, нажмите кнопку заново.')
@@ -345,6 +363,31 @@ async def accept_payment(call: types.CallbackQuery, callback_data=dict, state=FS
         await call.message.answer('KF   Пришлите чек о переводе в формате pdf (обязательно).')
         await state.update_data(id=id, type='kf')
         await Activity.acceptPayment.set()
+
+
+
+@dp.callback_query_handler(trade_cb.filter(action=['cancel_payment']), state=Activity.acceptOrder)
+async def accept_payment(call: types.CallbackQuery, callback_data=dict, state=FSMContext):
+    id = str(callback_data['id'])
+
+    if callback_data['type'] == 'kf':
+        
+        get_current_info = requests.get(URL_DJANGO + f'kf/trade/detail/{id}/')
+        
+        set_status = requests.post(URL_DJANGO + f'kf/trade/')
+
+        data = {
+                    'id': id,
+                    'status': 'cancel_by_operator',
+                }
+        update_status = requests.post(URL_DJANGO + 'update/kf/trade/', json=data)
+
+        if (update_status.status_code == 200):
+
+            await call.message.answer('Сделка отменена.')
+            await state.finish()
+        else:
+            await call.message.answer('Произошла ошибка. Нажмите кнопку отмены заново.')
 
 
 @dp.message_handler(content_types=['photo', 'document'], state=Activity.acceptPayment)

@@ -369,7 +369,7 @@ async def accept_payment(call: types.CallbackQuery, callback_data=dict, state=FS
 @dp.callback_query_handler(trade_cb.filter(action=['cancel_payment']), state=Activity.acceptOrder)
 async def accept_payment(call: types.CallbackQuery, callback_data=dict, state=FSMContext):
     id = str(callback_data['id'])
-
+    print(id)
     if callback_data['type'] == 'kf':
         
         get_current_info = requests.get(URL_DJANGO + f'kf/trade/detail/{id}/')

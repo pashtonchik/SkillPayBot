@@ -41,6 +41,7 @@ def create_accept_kb(trade_id, trade_type):
     )
     return kb_accept_payment
 
+
 def create_kf_accept_kb(trade_id, trade_type):
     kb_accept_payment = InlineKeyboardMarkup(
         inline_keyboard=[
@@ -84,7 +85,7 @@ async def confirm_payment(id, message, state):
                     await state.finish()
                     break
             await asyncio.sleep(1)
-            
+
         except Exception as e:
             print(e)
             continue
@@ -290,8 +291,11 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
     elif callback_data['type'] == 'kf':
         get_pay_info = requests.get(URL_DJANGO + f'kf/trade/detail/{trade_id}/')
         print(get_pay_info.status_code)
+        time_now = datetime.datetime.now()
+        delta = datetime.datetime.now() - get_pay_info.json()['kftrade']['date_create'] - get_pay_info.json()['kftrade']['time_in_work']
         if (not get_pay_info.json()['kftrade']['agent'] or str(get_pay_info.json()['kftrade']['agent']) == str(
-                call.from_user.id)) and get_pay_info.json()['kftrade']['status'] != 'closed':
+                call.from_user.id)) and \
+                get_pay_info.json()['kftrade']['status'] != 'closed':
 
             set_agent_trade = requests.post(URL_DJANGO + f'update/kf/trade/', json=data)
 
@@ -305,7 +309,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
                 try:
                     await call.answer('Вы успешно взяли заявку в работу!', show_alert=True)
                     await call.message.edit_text(f'''
-KF
+KF {delta}
 Переведите {get_current_info.json()['kftrade']['amount']} RUB
 Реквизиты: {get_current_info.json()['kftrade']['card_number']} {get_current_info.json()['paymethod_description']}
 
@@ -365,21 +369,20 @@ async def accept_payment(call: types.CallbackQuery, callback_data=dict, state=FS
         await Activity.acceptPayment.set()
 
 
-
 @dp.callback_query_handler(trade_cb.filter(action=['cancel_payment']), state=Activity.acceptOrder)
 async def accept_payment(call: types.CallbackQuery, callback_data=dict, state=FSMContext):
     id = str(callback_data['id'])
     print(id)
     if callback_data['type'] == 'kf':
-        
+
         get_current_info = requests.get(URL_DJANGO + f'kf/trade/detail/{id}/')
-        
+
         set_status = requests.post(URL_DJANGO + f'kf/trade/')
 
         data = {
-                    'id': id,
-                    'status': 'cancel_by_operator',
-                }
+            'id': id,
+            'status': 'cancel_by_operator',
+        }
         update_status = requests.post(URL_DJANGO + 'update/kf/trade/', json=data)
 
         if (update_status.status_code == 200):
@@ -443,8 +446,8 @@ async def get_photo(message: types.Message, state=FSMContext):
         upload = requests.post(URL_DJANGO + 'update/pay/', json=data)
         if upload.status_code == 200:
             data = {
-                        'id': id,
-                        'status': 'confirm_payment'
+                'id': id,
+                'status': 'confirm_payment'
             }
             update_pay = requests.post(URL_DJANGO + 'update/pay/', json=data)
 
@@ -488,7 +491,6 @@ async def get_photo(message: types.Message, state=FSMContext):
                 await state.finish()
         else:
             await message.reply(text='Вы отправили чек не в том формате, пришлите заново в формате pdf')
-
 
 
 @dp.callback_query_handler(text='Назад')

@@ -34,13 +34,22 @@ def delete_from_database(u_id, msg_id, trade_id):
     con.commit()
     con.close()
 
-def select_from_databases(trade_id):
+def select_data_from_database(trade_id):
     con = sqlite3.connect("message.db")
     cur = con.cursor()
     cur.execute(f"""SELECT u_id, msg_id FROM messages where trade_id={trade_id}""")
     data = cur.fetchall()
     con.close()
     return data
+
+def select_trades_from_database():
+    con = sqlite3.connect("message.db")
+    cur = con.cursor()
+    cur.execute(f"""SELECT DISTINCT trade_id FROM messages""")
+    data = cur.fetchall()
+    con.close()
+    return data
+
 
 def create_button_accept(trade_id, trade_type):
 
@@ -103,11 +112,11 @@ async def check_trades(dp):
                     try: 
                         message = await bot.send_message(int(operator), create_message_text(trade), reply_markup=kb_accept_order)
                         add_to_database(message.message_id, message.chat.id, trade['data']['id'])  
-                        print(select_from_databases(trade_id=trade['data']['id']))        
                     except Exception as e:
                         print(e)
                         continue
-                    
+        trades = select_trades_from_database()
+        print(trades)
         req_kftrades = requests.get(URL_DJANGO + 'get/free/kftrades/')
         kf_trades = req_kftrades.json()
 

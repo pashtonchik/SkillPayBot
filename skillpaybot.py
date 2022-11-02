@@ -6,7 +6,7 @@ from loader import dp, bot
 from settings import URL_DJANGO
 from utils.notify_admins import on_startup_notify
 from utils.set_bot_commands import set_default_commands
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardRemove
 from aiogram.utils.callback_data import CallbackData
 from datetime import datetime
 import sqlite3
@@ -16,36 +16,37 @@ trade_cb = CallbackData("trade", "type", "id", "action")
 def init_database():
     con = sqlite3.connect("message.db")
     cur = con.cursor()
-    cur.execute("""CREATE TABLE IF NOT EXISTS messages (u_id INT, msg_id INT, trade_id INT)""")
+    cur.execute("""CREATE TABLE IF NOT EXISTS messages (u_id INT, msg_id INT, trade_id INT, type CHAR)""")
     con.commit()
     con.close()
 
-def add_to_database(u_id, msg_id, trade_id):
+def add_to_database(u_id, msg_id, trade_id, type):
     con = sqlite3.connect("message.db")
     cur = con.cursor()
-    cur.execute(f"""INSERT INTO messages (u_id, msg_id, trade_id) values ({u_id}, {msg_id}, {trade_id})""")
+    cur.execute(f"""INSERT INTO messages (u_id, msg_id, trade_id, type) 
+    values ({u_id}, {msg_id}, {trade_id}), {type}""")
     con.commit()
     con.close()
 
-def delete_from_database(u_id, msg_id, trade_id):
+def delete_from_database(u_id, msg_id, trade_id, type):
     con = sqlite3.connect("message.db")
     cur = con.cursor()
-    cur.execute(f"""DELETE FROM messages WHERE u_id={u_id} and msg_id={msg_id} and trade_id={trade_id})""")
+    cur.execute(f"""DELETE FROM messages WHERE u_id={u_id} and msg_id={msg_id} and trade_id={trade_id} and type={type}""")
     con.commit()
     con.close()
 
-def select_data_from_database(trade_id):
+def select_data_from_database(trade_id, type):
     con = sqlite3.connect("message.db")
     cur = con.cursor()
-    cur.execute(f"""SELECT u_id, msg_id FROM messages where trade_id={trade_id}""")
+    cur.execute(f"""SELECT u_id, msg_id FROM messages WHERE trade_id={trade_id} and type={type}""")
     data = cur.fetchall()
     con.close()
     return data
 
-def select_trades_from_database():
+def select_trades_from_database(type):
     con = sqlite3.connect("message.db")
     cur = con.cursor()
-    cur.execute(f"""SELECT DISTINCT trade_id FROM messages""")
+    cur.execute(f"""SELECT DISTINCT trade_id FROM messages WHERE type={type}""")
     data = cur.fetchall()
     con.close()
     return data
@@ -111,12 +112,43 @@ async def check_trades(dp):
                     
                     try: 
                         message = await bot.send_message(int(operator), create_message_text(trade), reply_markup=kb_accept_order)
-                        add_to_database(message.message_id, message.chat.id, trade['data']['id'])  
+                        add_to_database(message.message_id, message.chat.id, trade['data']['id'], trade['type'])  
                     except Exception as e:
                         print(e)
                         continue
-        trades = select_trades_from_database()
-        print(trades)
+        trades = select_trades_from_database('kf')
+        for trade, i in trades:
+            tradeDetail = requests.get(URL_DJANGO + f'kf/trade/detail/{trade}/')
+            if (tradeDetail.status_code == 200):
+                tradeDetail = tradeDetail.json()
+                data = select_data_from_database(trade_id=trade, type='kf')
+                text = create_message_text(tradeDetail)
+                if (tradeDetail['kftrade']['agent']):
+                    text = text + \
+"""
+
+UPDATE:
+
+Время сделки истекло!
+
+"""
+                elif (tradeDetail['kftrade']['status'] == 'closed'):
+                    text = text + \
+"""
+
+UPDATE:
+
+Время сделки истекло!
+
+"""
+                
+                for userId, msgId in data:
+                    try:
+                        await bot.edit_message_text(chat_id=userId, message_id=msgId, text=text, reply_markup=ReplyKeyboardRemove())
+                    except Exception as e:
+                        print(e)
+                        continue
+
         req_kftrades = requests.get(URL_DJANGO + 'get/free/kftrades/')
         kf_trades = req_kftrades.json()
 

@@ -180,7 +180,6 @@ UPDATE:
                         except Exception as e:
                             print(e)
                             continue
-
         req_kftrades = requests.get(URL_DJANGO + 'get/free/kftrades/')
         kf_trades = req_kftrades.json()
 

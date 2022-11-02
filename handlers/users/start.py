@@ -351,7 +351,7 @@ async def accept_payment(call: types.CallbackQuery, callback_data=dict, state=FS
         await Activity.acceptPayment.set()
     elif callback_data['type'] == 'kf':
         get_current_info = requests.get(URL_DJANGO + f'kf/trade/detail/{id}/')
-        await call.message.edit_text(f'''
+        msg = await call.message.edit_text(f'''
 Заявка: KF — {id}
 Инструмент: {get_current_info.json()['kftrade']['type']}
 Сумма: `{get_current_info.json()['kftrade']['amount']}` 
@@ -359,8 +359,9 @@ async def accept_payment(call: types.CallbackQuery, callback_data=dict, state=FS
 
 Статус: **Пришлите чек о переводе!**
 
-            ''')
-        await state.update_data(id=id, type='kf')
+            ''', parse_mode='Markdown')
+        
+        await state.update_data(id=id, type='kf', message_id=msg.message_id)
         await Activity.acceptPayment.set()
 
 
@@ -408,6 +409,7 @@ async def accept_payment(call: types.CallbackQuery, callback_data=dict, state=FS
 async def get_photo(message: types.Message, state=FSMContext):
     data = await state.get_data()
     id = data['id']
+    msg_id = data['message_id']
     body = {
         'tg_id': message.from_user.id,
         'options': {
@@ -483,8 +485,9 @@ async def get_photo(message: types.Message, state=FSMContext):
                 'cheque': f'kf_checks/kf{id}_{message.from_user.id}.pdf'
             }
             upload = requests.post(URL_DJANGO + 'update/kf/trade/', json=data)
+            
             if upload.status_code == 200:
-                await message.edit_text(f'''
+                await bot.edit_message_text(chat_id=message.from_user.id, message_id=msg_id, text=f'''
 Заявка: KF — {id}
 Инструмент: {get_current_info.json()['kftrade']['type']}
 Сумма: `{get_current_info.json()['kftrade']['amount']}` 
@@ -492,15 +495,23 @@ async def get_photo(message: types.Message, state=FSMContext):
 
 Статус: **Производится проверка чека!**
 
-''')
+''', parse_mode='Markdown')
                 while 1:
                     req_django = requests.get(URL_DJANGO + f'kf/trade/detail/{id}/')
                     if (req_django.status_code == 200):
                         if (req_django.json()['kftrade']['status'] == 'confirm_payment'):
                             change_status_agent = requests.post(URL_DJANGO + 'edit_agent_status/', json=body)
-
+                            await bot.delete_message(chat_id=message.from_user.id, message_id=msg_id)
                             if change_status_agent.status_code == 200:
-                                await message.reply('Чек принят! Сделка завершена, ожидайте следующую.')
+                                await message.reply(f'''
+Заявка: KF — {id}
+Инструмент: {get_current_info.json()['kftrade']['type']}
+Сумма: `{get_current_info.json()['kftrade']['amount']}` 
+Адресат: `{get_current_info.json()['kftrade']['card_number']}`
+
+Статус: **Заявка успешно выполнена!**
+
+''', parse_mode='Markdown')
                             else:
                                 await message.answer('Произошла ошибка, свяжитесь с админом.')
                             break

@@ -290,7 +290,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
 
     elif callback_data['type'] == 'kf':
         get_pay_info = requests.get(URL_DJANGO + f'kf/trade/detail/{trade_id}/')
-        print(get_pay_info.status_code)
+
         if (not get_pay_info.json()['kftrade']['agent'] or str(get_pay_info.json()['kftrade']['agent']) == str(
                 call.from_user.id)) and \
                 get_pay_info.json()['kftrade']['status'] != 'closed':
@@ -298,12 +298,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
             set_agent_trade = requests.post(URL_DJANGO + f'update/kf/trade/', json=data)
 
             get_current_info = requests.get(URL_DJANGO + f'kf/trade/detail/{trade_id}/')
-            # while '*' in get_current_info.json()['kftrade']['card_number']:
-            #     get_current_info = requests.get(URL_DJANGO + f'kf/trade/detail/{trade_id}/')
-            #     await asyncio.sleep(1)
-            print(get_current_info.json())
-            print(call.from_user.id)
-            print(get_current_info.json())
+
             if str(get_current_info.json()['kftrade']['agent']) == str(call.from_user.id):
                 try:
                     await call.answer('Вы успешно взяли заявку в работу!', show_alert=True)
@@ -462,7 +457,7 @@ async def get_photo(message: types.Message, state=FSMContext):
             await state.finish()
     elif data['type'] == 'kf':
         file_name = cheques_base + f'kf{id}_{message.from_user.id}.pdf'
-        if message.content_type == 'document' and message.document.file_name.split('.')[1] == 'pdf':
+        if message.content_type == 'document' and message.document.file_name[-3:] == 'pdf':
             await message.document.download(destination_file=file_name)
             data = {
                 'id': id,

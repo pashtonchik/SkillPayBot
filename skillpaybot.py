@@ -28,11 +28,11 @@ def add_to_database(u_id, msg_id, trade_id, type):
     con.commit()
     con.close()
 
-def delete_from_database(u_id, msg_id, trade_id, type):
+def delete_from_database(trade_id, type):
     con = sqlite3.connect("message.db")
     cur = con.cursor()
-    cur.execute(f"""DELETE FROM messages WHERE u_id={u_id} and msg_id={msg_id} 
-    and trade_id={trade_id} and type='{type}'""")
+    cur.execute(f"""DELETE FROM messages WHERE
+    trade_id={trade_id} and type='{type}'""")
     con.commit()
     con.close()
 
@@ -149,7 +149,7 @@ UPDATE:
                     except Exception as e:
                         print(e)
                         continue
-
+            delete_from_database(trade, 'kf')
         req_kftrades = requests.get(URL_DJANGO + 'get/free/kftrades/')
         kf_trades = req_kftrades.json()
 

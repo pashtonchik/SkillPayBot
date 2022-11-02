@@ -47,7 +47,7 @@ def select_data_from_database(trade_id, type):
 def select_trades_from_database(type):
     con = sqlite3.connect("message.db")
     cur = con.cursor()
-    cur.execute(f"""SELECT DISTINCT trade_id FROM messages WHERE type={type}""")
+    cur.execute(f"""SELECT DISTINCT trade_id FROM messages WHERE type='{type}'""")
     data = cur.fetchall()
     con.close()
     return data

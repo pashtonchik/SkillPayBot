@@ -172,7 +172,7 @@ UPDATE:
                 if f :
                     for userId, msgId in data:
                         try:
-                            if (tradeDetail['kftrade']['agent'] != userId):
+                            if (str(tradeDetail['kftrade']['agent']) != str(userId)):
                                 print('НЕРАВНО', userId, tradeDetail['kftrade']['agent'])
                                 await bot.edit_message_text(chat_id=userId, message_id=msgId, text=text, reply_markup=None)
                             delete_from_database(userId, msgId, trade, 'kf')

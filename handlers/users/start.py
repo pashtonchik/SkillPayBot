@@ -476,7 +476,7 @@ async def get_photo(message: types.Message, state=FSMContext):
                         if (req_django.json()['kftrade']['status'] == 'confirm_payment'):
                             change_status_agent = requests.post(URL_DJANGO + 'edit_agent_status/', json=body)
 
-                            if change_status_agent.status_code == 200 and update_pay.status_code == 200:
+                            if change_status_agent.status_code == 200:
                                 await message.reply('Чек принят! Сделка завершена, ожидайте следующую.')
                             else:
                                 await message.answer('Произошла ошибка, свяжитесь с админом.')

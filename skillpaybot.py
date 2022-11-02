@@ -155,7 +155,7 @@ async def check_trades(dp):
 
 UPDATE:
 
-Время сделки истекло!
+Сделку взял другой оператор!
 
 """
                     f = True

@@ -148,6 +148,7 @@ async def check_trades(dp):
                 data = select_data_from_database(trade_id=trade, type='kf')
                 text = edited_message_text(tradeDetail['kftrade'])
                 print(tradeDetail['kftrade']['agent'])
+                f = False
                 if (tradeDetail['kftrade']['agent']):
                     text = text + \
 """
@@ -157,6 +158,7 @@ UPDATE:
 Время сделки истекло!
 
 """
+                    f = True
                 elif (tradeDetail['kftrade']['status'] == 'closed' or tradeDetail['kftrade']['status'] == 'time_cancel'):
                     text = text + \
 """
@@ -166,15 +168,16 @@ UPDATE:
 Время сделки истекло!
 
 """
-                
-                for userId, msgId in data:
-                    try:
-                        if (tradeDetail['kftrade']['agent'] != userId):
-                            await bot.edit_message_text(chat_id=userId, message_id=msgId, text=text, reply_markup=None)
-                        delete_from_database(userId, msgId, trade, 'kf')
-                    except Exception as e:
-                        print(e)
-                        continue
+                    f = True
+                if f :
+                    for userId, msgId in data:
+                        try:
+                            if (tradeDetail['kftrade']['agent'] != userId):
+                                await bot.edit_message_text(chat_id=userId, message_id=msgId, text=text, reply_markup=None)
+                            delete_from_database(userId, msgId, trade, 'kf')
+                        except Exception as e:
+                            print(e)
+                            continue
 
         req_kftrades = requests.get(URL_DJANGO + 'get/free/kftrades/')
         kf_trades = req_kftrades.json()

@@ -142,7 +142,7 @@ async def check_trades(dp):
         for trade in trades:
             trade = trade[0]
             tradeDetail = requests.get(URL_DJANGO + f'kf/trade/detail/{trade}/')
-            print(tradeDetail.json())
+
             if (tradeDetail.status_code == 200):
                 tradeDetail = tradeDetail.json()
                 data = select_data_from_database(trade_id=trade, type='kf')
@@ -174,7 +174,7 @@ UPDATE:
                         try:
                             if (str(tradeDetail['kftrade']['agent']) != str(userId)):
                                 print('НЕРАВНО', userId, tradeDetail['kftrade']['agent'])
-                                await bot.edit_message_text(chat_id=userId, message_id=msgId, text=text, reply_markup=None)
+                                await bot.delete_message(chat_id=userId, message_id=msgId)
                             delete_from_database(userId, msgId, trade, 'kf')
                         except Exception as e:
                             print(e)

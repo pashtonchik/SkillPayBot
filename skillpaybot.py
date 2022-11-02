@@ -156,7 +156,7 @@ UPDATE:
 Время сделки истекло!
 
 """
-                elif (tradeDetail['kftrade']['status'] == 'closed'):
+                elif (tradeDetail['kftrade']['status'] == 'closed' or tradeDetail['kftrade']['status'] == 'time_cancel'):
                     text = text + \
 """
 

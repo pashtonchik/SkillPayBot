@@ -93,6 +93,26 @@ def create_message_text(trade):
                         '''
     return messageText
 
+
+def edit_message_text(trade):
+    if trade['type'] == 'trade':
+        messageText = f'''
+Новая сделка! Покупка {trade['data']['cryptocurrency']} за {trade['data']['currency']}
+Сумма: {trade['data']['currency_amount']} {trade['data']['currency']}
+'''
+    elif trade['type'] == 'pay':
+        messageText = f'''
+Новая сделка! Покупка 
+Сумма: {trade['data']['amount']} RUB
+'''
+    else:   
+        messageText = f'''
+Заявка KF - {trade['id']}                     
+Инструмент: {trade['type']}
+Сумма: {trade['amount']} RUB
+                        '''
+    return messageText
+
 async def check_trades(dp):
     while 1:
         # try:

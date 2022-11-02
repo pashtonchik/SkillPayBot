@@ -351,6 +351,8 @@ async def accept_payment(call: types.CallbackQuery, callback_data=dict, state=FS
         await Activity.acceptPayment.set()
     elif callback_data['type'] == 'kf':
         get_current_info = requests.get(URL_DJANGO + f'kf/trade/detail/{id}/')
+        msgText = await call.message.text
+        print('MSGTEXT:' , msgText)
         await call.message.edit_text(f'''
 Заявка KF — {id}
 Пришлите чек о переводе в формате pdf (обязательно).''')
@@ -489,12 +491,6 @@ async def get_photo(message: types.Message, state=FSMContext):
                             else:
                                 await message.answer('Произошла ошибка, свяжитесь с админом.')
                             break
-
-                # data = {
-                #     'id': id,
-                #     'status': 'confirm_payment'
-                # }
-                # update_pay = requests.post(URL_DJANGO + 'update/kf/trade/', json=data)
 
                 
                 await state.finish()

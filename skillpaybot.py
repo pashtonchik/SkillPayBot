@@ -87,9 +87,9 @@ def create_message_text(trade):
 '''
     else:   
         messageText = f'''
-Заявка KF - {trade['data']['id']}                     
+Заявка KF — {trade['data']['id']}                     
 Инструмент: {trade['data']['type']}
-Сумма: {trade['data']['amount']} RUB
+Сумма: `{trade['data']['amount']}`
                         '''
     return messageText
 

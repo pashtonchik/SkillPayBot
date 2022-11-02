@@ -109,7 +109,7 @@ def edited_message_text(trade):
         messageText = f'''
 Заявка KF - {trade['id']}                     
 Инструмент: {trade['type']}
-Сумма: {trade['amount']} RUB
+Сумма: ```{trade['amount']}```
                         '''
     return messageText
 

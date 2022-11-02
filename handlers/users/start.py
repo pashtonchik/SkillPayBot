@@ -308,9 +308,10 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
                 try:
                     await call.answer('Вы успешно взяли заявку в работу!', show_alert=True)
                     await call.message.edit_text(f'''
-KF
-Переведите {get_current_info.json()['kftrade']['amount']} RUB
-Реквизиты: {get_current_info.json()['kftrade']['card_number']} {get_current_info.json()['paymethod_description']}
+Заявка: KF - {trade_id}
+Инструмент: {get_current_info.json()['kftrade']['type']}
+Сумма: ```{get_current_info.json()['kftrade']['amount']}``` 
+Адресат: ```{get_current_info.json()['kftrade']['card_number']}```
 
 После перевода нажмите кнопку "Оплатил"
             ''', reply_markup=kb_accept_kf_payment)

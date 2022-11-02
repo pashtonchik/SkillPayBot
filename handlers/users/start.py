@@ -357,7 +357,7 @@ async def accept_payment(call: types.CallbackQuery, callback_data=dict, state=FS
 Сумма: `{get_current_info.json()['kftrade']['amount']}` 
 Адресат: `{get_current_info.json()['kftrade']['card_number']}`
 
-Статус: **Пришлите чек о переводе!**
+Статус: *Пришлите чек о переводе!*
 
             ''', parse_mode='Markdown')
         
@@ -493,7 +493,7 @@ async def get_photo(message: types.Message, state=FSMContext):
 Сумма: `{get_current_info.json()['kftrade']['amount']}` 
 Адресат: `{get_current_info.json()['kftrade']['card_number']}`
 
-Статус: **Производится проверка чека!**
+Статус: *Производится проверка чека!*
 
 ''', parse_mode='Markdown')
                 while 1:
@@ -509,7 +509,7 @@ async def get_photo(message: types.Message, state=FSMContext):
 Сумма: `{get_current_info.json()['kftrade']['amount']}` 
 Адресат: `{get_current_info.json()['kftrade']['card_number']}`
 
-Статус: **Заявка успешно выполнена!**
+Статус: *Заявка успешно выполнена!*
 
 ''', parse_mode='Markdown')
                             else:

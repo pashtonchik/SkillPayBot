@@ -16,7 +16,7 @@ trade_cb = CallbackData("trade", "type", "id", "action")
 def init_database():
     con = sqlite3.connect("message.db")
     cur = con.cursor()
-    cur.execute("""CREATE TABLE IF NOT EXISTS messages (u_id INT, msg_id INT, trade_id INT, type TEXT)""")
+    cur.execute("""CREATE TABLE IF NOT EXISTS messages (u_id INT, msg_id INT, trade_id INT, type CHAR)""")
     con.commit()
     con.close()
 
@@ -24,7 +24,7 @@ def add_to_database(u_id, msg_id, trade_id, type):
     con = sqlite3.connect("message.db")
     cur = con.cursor()
     cur.execute(f"""INSERT INTO messages (u_id, msg_id, trade_id, type) 
-    values ({u_id}, {msg_id}, {trade_id}), '{type}')""")
+    values ({u_id}, {msg_id}, {trade_id}, {type})""")
     con.commit()
     con.close()
 
@@ -32,14 +32,14 @@ def delete_from_database(u_id, msg_id, trade_id, type):
     con = sqlite3.connect("message.db")
     cur = con.cursor()
     cur.execute(f"""DELETE FROM messages WHERE u_id={u_id} and msg_id={msg_id} 
-    and trade_id={trade_id} and type='{type}'""")
+    and trade_id={trade_id} and type={type}""")
     con.commit()
     con.close()
 
 def select_data_from_database(trade_id, type):
     con = sqlite3.connect("message.db")
     cur = con.cursor()
-    cur.execute(f"""SELECT u_id, msg_id FROM messages WHERE trade_id={trade_id} and type='{type}'""")
+    cur.execute(f"""SELECT u_id, msg_id FROM messages WHERE trade_id={trade_id} and type={type}""")
     data = cur.fetchall()
     con.close()
     return data
@@ -47,7 +47,7 @@ def select_data_from_database(trade_id, type):
 def select_trades_from_database(type):
     con = sqlite3.connect("message.db")
     cur = con.cursor()
-    cur.execute(f"""SELECT DISTINCT trade_id FROM messages WHERE type='{type}'""")
+    cur.execute(f"""SELECT DISTINCT trade_id FROM messages WHERE type={type}""")
     data = cur.fetchall()
     con.close()
     return data

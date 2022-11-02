@@ -168,6 +168,7 @@ UPDATE:
                 
                 for userId, msgId in data:
                     try:
+                        print(userId, msgId)
                         await bot.edit_message_text(chat_id=userId, message_id=msgId, text=text, reply_markup=ReplyKeyboardRemove())
                         delete_from_database(userId, msgId, trade, 'kf')
                     except Exception as e:

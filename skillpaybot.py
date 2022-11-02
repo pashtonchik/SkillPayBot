@@ -24,7 +24,7 @@ def add_to_database(u_id, msg_id, trade_id, type):
     con = sqlite3.connect("message.db")
     cur = con.cursor()
     cur.execute(f"""INSERT INTO messages (u_id, msg_id, trade_id, type) 
-    values ({u_id}, {msg_id}, {trade_id}), {type}""")
+    values ({u_id}, {msg_id}, {trade_id}), '{type}'""")
     con.commit()
     con.close()
 

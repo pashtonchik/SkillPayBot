@@ -351,11 +351,15 @@ async def accept_payment(call: types.CallbackQuery, callback_data=dict, state=FS
         await Activity.acceptPayment.set()
     elif callback_data['type'] == 'kf':
         get_current_info = requests.get(URL_DJANGO + f'kf/trade/detail/{id}/')
-        msgText = call.message.text
-        print('MSGTEXT:' , msgText)
         await call.message.edit_text(f'''
-Заявка KF — {id}
-Пришлите чек о переводе в формате pdf (обязательно).''')
+Заявка: KF — {id}
+Инструмент: {get_current_info.json()['kftrade']['type']}
+Сумма: `{get_current_info.json()['kftrade']['amount']}` 
+Адресат: `{get_current_info.json()['kftrade']['card_number']}`
+
+Статус: **Пришлите чек о переводе!**
+
+            ''')
         await state.update_data(id=id, type='kf')
         await Activity.acceptPayment.set()
 
@@ -470,6 +474,7 @@ async def get_photo(message: types.Message, state=FSMContext):
             await message.answer('Произошла ошибка при скачивании фото. Свяжитесь с админом.')
             await state.finish()
     elif data['type'] == 'kf':
+        get_current_info = requests.get(URL_DJANGO + f'kf/trade/detail/{id}/')
         file_name = cheques_base + f'kf{id}_{message.from_user.id}.pdf'
         if message.content_type == 'document' and message.document.file_name[-3:] == 'pdf':
             await message.document.download(destination_file=file_name)
@@ -479,7 +484,15 @@ async def get_photo(message: types.Message, state=FSMContext):
             }
             upload = requests.post(URL_DJANGO + 'update/kf/trade/', json=data)
             if upload.status_code == 200:
-                await message.answer('Ожидание подтверждения чека...')
+                await message.edit_text(f'''
+Заявка: KF — {id}
+Инструмент: {get_current_info.json()['kftrade']['type']}
+Сумма: `{get_current_info.json()['kftrade']['amount']}` 
+Адресат: `{get_current_info.json()['kftrade']['card_number']}`
+
+Статус: **Производится проверка чека!**
+
+''')
                 while 1:
                     req_django = requests.get(URL_DJANGO + f'kf/trade/detail/{id}/')
                     if (req_django.status_code == 200):

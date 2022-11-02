@@ -314,7 +314,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
 Адресат: ```{get_current_info.json()['kftrade']['card_number']}```
 
 После перевода нажмите кнопку "Оплатил"
-            ''', reply_markup=kb_accept_kf_payment)
+            ''', reply_markup=kb_accept_kf_payment, parse_mode='Markdown')
                     await Activity.acceptOrder.set()
                 except Exception as e:
                     await call.answer('Произошла ошибка, нажмите кнопку заново.')

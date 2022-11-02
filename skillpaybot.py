@@ -169,7 +169,7 @@ UPDATE:
                 for userId, msgId in data:
                     try:
                         if (tradeDetail['kftrade']['agent'] != userId):
-                            await bot.edit_message_text(chat_id=userId, message_id=msgId, text=text, reply_markup=ReplyKeyboardRemove())
+                            await bot.edit_message_text(chat_id=userId, message_id=msgId, text=text, reply_markup=None)
                         delete_from_database(userId, msgId, trade, 'kf')
                     except Exception as e:
                         print(e)

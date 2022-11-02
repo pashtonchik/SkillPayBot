@@ -487,7 +487,8 @@ async def get_photo(message: types.Message, state=FSMContext):
             upload = requests.post(URL_DJANGO + 'update/kf/trade/', json=data)
             
             if upload.status_code == 200:
-                await bot.edit_message_text(chat_id=message.from_user.id, message_id=msg_id, text=f'''
+                await bot.delete_message(chat_id=message.from_user.id, message_id=msg_id)
+                msg = await bot.send_message(chat_id=message.from_user.id, text=f'''
 Заявка: KF — {id}
 Инструмент: {get_current_info.json()['kftrade']['type']}
 Сумма: `{get_current_info.json()['kftrade']['amount']}` 
@@ -503,6 +504,7 @@ async def get_photo(message: types.Message, state=FSMContext):
                             change_status_agent = requests.post(URL_DJANGO + 'edit_agent_status/', json=body)
                             await bot.delete_message(chat_id=message.from_user.id, message_id=msg_id)
                             if change_status_agent.status_code == 200:
+                                await bot.delete_message(chat_id=message.from_user.id, message_id=msg.message_id)
                                 await message.reply(f'''
 Заявка: KF — {id}
 Инструмент: {get_current_info.json()['kftrade']['type']}
@@ -515,7 +517,7 @@ async def get_photo(message: types.Message, state=FSMContext):
                             else:
                                 await message.answer('Произошла ошибка, свяжитесь с админом.')
                             break
-
+                    await asyncio.sleep(0)
                 
                 await state.finish()
             else:

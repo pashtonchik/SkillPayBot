@@ -240,8 +240,6 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
 Переведите {get_current_info.json()['trade']['currency_amount']} {get_current_info.json()['trade']['currency']}
 Комментарий: {get_current_info.json()['trade']['details']}
 Реквизиты: {get_current_info.json()['trade']['counterDetails']} {get_current_info.json()['paymethod_description']}
-
-После перевода нажмите кнопку "Оплатил"
                                                         ''', reply_markup=kb_accept_payment)
                         await Activity.acceptOrder.set()
                     else:
@@ -273,8 +271,6 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
                     await call.message.edit_text(f'''
 Переведите {get_current_info.json()['pay']['amount']} RUB
 Реквизиты: {get_current_info.json()['pay']['card_number']} {get_current_info.json()['paymethod_description']}
-
-После перевода нажмите кнопку "Оплатил"
             ''', reply_markup=kb_accept_payment)
                     await Activity.acceptOrder.set()
                 except Exception as e:
@@ -307,8 +303,6 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
 Инструмент: {get_current_info.json()['kftrade']['type']}
 Сумма: `{get_current_info.json()['kftrade']['amount']}` 
 Адресат: `{get_current_info.json()['kftrade']['card_number']}`
-
-После перевода нажмите кнопку "Оплатил"
             ''', reply_markup=kb_accept_kf_payment, parse_mode='Markdown')
                     await Activity.acceptOrder.set()
                 except Exception as e:
@@ -357,7 +351,9 @@ async def accept_payment(call: types.CallbackQuery, callback_data=dict, state=FS
         await Activity.acceptPayment.set()
     elif callback_data['type'] == 'kf':
         get_current_info = requests.get(URL_DJANGO + f'kf/trade/detail/{id}/')
-        await call.message.answer('KF   Пришлите чек о переводе в формате pdf (обязательно).')
+        await call.message.edit_text(f'''
+Заявка KF — {id}
+Пришлите чек о переводе в формате pdf (обязательно).''')
         await state.update_data(id=id, type='kf')
         await Activity.acceptPayment.set()
 
@@ -365,7 +361,7 @@ async def accept_payment(call: types.CallbackQuery, callback_data=dict, state=FS
 @dp.callback_query_handler(trade_cb.filter(action=['cancel_payment']), state=Activity.acceptOrder)
 async def accept_payment(call: types.CallbackQuery, callback_data=dict, state=FSMContext):
     id = str(callback_data['id'])
-    print(id)
+
     if callback_data['type'] == 'kf':
 
         get_current_info = requests.get(URL_DJANGO + f'kf/trade/detail/{id}/')
@@ -379,8 +375,24 @@ async def accept_payment(call: types.CallbackQuery, callback_data=dict, state=FS
         update_status = requests.post(URL_DJANGO + 'update/kf/trade/', json=data)
 
         if (update_status.status_code == 200):
+            body = {
+                'tg_id': call.from_user.id,
+                'options': {
+                    'is_working_now': False,
+                    'is_instead': False,
+                }
+            }
 
-            await call.message.answer('Сделка отменена.')
+            change_status_agent = requests.post(URL_DJANGO + 'edit_agent_status/', json=body)
+
+            if (change_status_agent.status_code == 200):
+
+                await call.answer('Сделка отменена. Вы сняты со смены, ждите пополнения баланса.', show_alert=True)
+
+            else:
+                await call.answer('Произошла ошибка, свяжитесь с админом.')
+
+            await call.message.delete()
             await state.finish()
         else:
             await call.message.answer('Произошла ошибка. Нажмите кнопку отмены заново.')

@@ -94,7 +94,7 @@ def create_message_text(trade):
     return messageText
 
 
-def edit_message_text(trade):
+def edited_message_text(trade):
     if trade['type'] == 'trade':
         messageText = f'''
 Новая сделка! Покупка {trade['data']['cryptocurrency']} за {trade['data']['currency']}
@@ -146,7 +146,7 @@ async def check_trades(dp):
             if (tradeDetail.status_code == 200):
                 tradeDetail = tradeDetail.json()
                 data = select_data_from_database(trade_id=trade, type='kf')
-                text = create_message_text(tradeDetail['kftrade'])
+                text = edited_message_text(tradeDetail['kftrade'])
                 if (tradeDetail['kftrade']['agent']):
                     text = text + \
 """

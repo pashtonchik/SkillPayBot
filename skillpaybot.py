@@ -147,6 +147,7 @@ async def check_trades(dp):
                 tradeDetail = tradeDetail.json()
                 data = select_data_from_database(trade_id=trade, type='kf')
                 text = edited_message_text(tradeDetail['kftrade'])
+                print(tradeDetail['kftrade']['agent'])
                 if (tradeDetail['kftrade']['agent']):
                     text = text + \
 """

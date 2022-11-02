@@ -133,7 +133,7 @@ async def check_trades(dp):
                     
                     try: 
                         message = await bot.send_message(int(operator), create_message_text(trade), reply_markup=kb_accept_order)
-                        add_to_database(message.message_id, message.chat.id, trade['data']['id'], trade['type'])  
+                        add_to_database (message.chat.id, message.message_id, trade['data']['id'], trade['type'])  
                     except Exception as e:
                         print(e)
                         continue
@@ -168,8 +168,8 @@ UPDATE:
                 
                 for userId, msgId in data:
                     try:
-                        print(userId, msgId)
-                        await bot.edit_message_text(chat_id=userId, message_id=msgId, text=text, reply_markup=ReplyKeyboardRemove())
+                        if (tradeDetail['kftrade']['agent'] != userId):
+                            await bot.edit_message_text(chat_id=userId, message_id=msgId, text=text, reply_markup=ReplyKeyboardRemove())
                         delete_from_database(userId, msgId, trade, 'kf')
                     except Exception as e:
                         print(e)

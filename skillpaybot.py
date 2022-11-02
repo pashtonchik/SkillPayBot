@@ -126,7 +126,7 @@ async def check_trades(dp):
             if (tradeDetail.status_code == 200):
                 tradeDetail = tradeDetail.json()
                 data = select_data_from_database(trade_id=trade, type='kf')
-                text = create_message_text(tradeDetail)
+                text = create_message_text(tradeDetail['kftrade'])
                 if (tradeDetail['kftrade']['agent']):
                     text = text + \
 """

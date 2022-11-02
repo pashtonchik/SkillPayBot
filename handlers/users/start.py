@@ -351,7 +351,7 @@ async def accept_payment(call: types.CallbackQuery, callback_data=dict, state=FS
         await Activity.acceptPayment.set()
     elif callback_data['type'] == 'kf':
         get_current_info = requests.get(URL_DJANGO + f'kf/trade/detail/{id}/')
-        msgText = await call.message.text
+        msgText = call.message.text
         print('MSGTEXT:' , msgText)
         await call.message.edit_text(f'''
 Заявка KF — {id}

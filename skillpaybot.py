@@ -118,7 +118,8 @@ async def check_trades(dp):
                         print(e)
                         continue
         trades = select_trades_from_database('kf')
-        for trade, i in trades:
+        for trade in trades:
+            print(trade)
             tradeDetail = requests.get(URL_DJANGO + f'kf/trade/detail/{trade}/')
             if (tradeDetail.status_code == 200):
                 tradeDetail = tradeDetail.json()

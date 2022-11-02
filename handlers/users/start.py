@@ -502,7 +502,6 @@ async def get_photo(message: types.Message, state=FSMContext):
                     if (req_django.status_code == 200):
                         if (req_django.json()['kftrade']['status'] == 'confirm_payment'):
                             change_status_agent = requests.post(URL_DJANGO + 'edit_agent_status/', json=body)
-                            await bot.delete_message(chat_id=message.from_user.id, message_id=msg_id)
                             if change_status_agent.status_code == 200:
                                 await bot.delete_message(chat_id=message.from_user.id, message_id=msg.message_id)
                                 await message.reply(f'''

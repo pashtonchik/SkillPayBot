@@ -13,12 +13,14 @@ import sqlite3
 
 trade_cb = CallbackData("trade", "type", "id", "action")
 
+
 def init_database():
     con = sqlite3.connect("message.db")
     cur = con.cursor()
     cur.execute("""CREATE TABLE IF NOT EXISTS messages (u_id INT, msg_id INT, trade_id INT, type CHAR)""")
     con.commit()
     con.close()
+
 
 def add_to_database(u_id, msg_id, trade_id, type):
     con = sqlite3.connect("message.db")
@@ -28,6 +30,7 @@ def add_to_database(u_id, msg_id, trade_id, type):
     con.commit()
     con.close()
 
+
 def delete_from_database(u_id, msg_id, trade_id, type):
     con = sqlite3.connect("message.db")
     cur = con.cursor()
@@ -36,6 +39,7 @@ def delete_from_database(u_id, msg_id, trade_id, type):
     con.commit()
     con.close()
 
+
 def select_data_from_database(trade_id, type):
     con = sqlite3.connect("message.db")
     cur = con.cursor()
@@ -43,6 +47,7 @@ def select_data_from_database(trade_id, type):
     data = cur.fetchall()
     con.close()
     return data
+
 
 def select_trades_from_database(type):
     con = sqlite3.connect("message.db")
@@ -54,11 +59,12 @@ def select_trades_from_database(type):
 
 
 def create_button_accept(trade_id, trade_type):
-
     if trade_type == 'trade':
         trade_type = 'BZ'
     elif trade_type == 'pay':
         trade_type = 'googleSheets'
+    elif trade_type == 'gar_trade':
+        trade_type = 'garantex'
 
     kb_accept_order = InlineKeyboardMarkup(
         inline_keyboard=[
@@ -74,6 +80,7 @@ def create_button_accept(trade_id, trade_type):
     )
     return kb_accept_order
 
+
 def create_message_text(trade):
     if trade['type'] == 'trade':
         messageText = f'''
@@ -85,7 +92,13 @@ def create_message_text(trade):
 Новая сделка! Покупка 
 Сумма: {trade['data']['amount']} RUB
 '''
-    else:   
+    elif trade['type'] == 'gar_trade':
+        messageText = f'''
+        Заявка Gatantex — {trade['data']['id']}                     
+        Инструмент: {trade['data']['type']}
+        Сумма: `{trade['data']['amount']}`
+                                '''
+    else:
         messageText = f'''
 Заявка KF — {trade['data']['id']}                     
 Инструмент: {trade['data']['type']}
@@ -105,13 +118,19 @@ def edited_message_text(trade):
 Новая сделка! Покупка 
 Сумма: {trade['data']['amount']} RUB
 '''
-    else:   
+    elif trade['type'] == 'gar_trade':
+        messageText = f'''
+    Новая сделка! Покупка 
+    Сумма: {trade['data']['amount']} RUB
+    '''
+    else:
         messageText = f'''
 Заявка KF — {trade['id']}                     
 Инструмент: {trade['type']}
 Сумма: `{trade['amount']}`
                         '''
     return messageText
+
 
 async def check_trades(dp):
     while 1:
@@ -125,20 +144,20 @@ async def check_trades(dp):
             for trade in trades:
 
                 operators = trade['recipients']
-                
+
                 kb_accept_order = create_button_accept(trade_id=trade['data']['id'],
-                                                                   trade_type=trade['type'])
+                                                       trade_type=trade['type'])
 
                 for operator in operators:
-                    
-                    try: 
-                        message = await bot.send_message(int(operator), create_message_text(trade),\
-                             reply_markup=kb_accept_order, parse_mode='Markdown')
-                        add_to_database (message.chat.id, message.message_id, trade['data']['id'], trade['type'])  
+
+                    try:
+                        message = await bot.send_message(int(operator), create_message_text(trade), \
+                                                         reply_markup=kb_accept_order, parse_mode='Markdown')
+                        add_to_database(message.chat.id, message.message_id, trade['data']['id'], trade['type'])
                     except Exception as e:
                         print(e)
                         continue
-        
+
         trades = select_trades_from_database('kf')
         for trade in trades:
             trade = trade[0]
@@ -152,25 +171,26 @@ async def check_trades(dp):
                 f = False
                 if (tradeDetail['kftrade']['agent']):
                     text = text + \
-"""
-
-UPDATE:
-
-Сделку взял другой оператор!
-
-"""
+                           """
+                           
+                           UPDATE:
+                           
+                           Сделку взял другой оператор!
+                           
+                           """
                     f = True
-                elif (tradeDetail['kftrade']['status'] == 'closed' or tradeDetail['kftrade']['status'] == 'time_cancel'):
+                elif (tradeDetail['kftrade']['status'] == 'closed' or tradeDetail['kftrade'][
+                    'status'] == 'time_cancel'):
                     text = text + \
-"""
-
-UPDATE:
-
-Время сделки истекло!
-
-"""
+                           """
+                           
+                           UPDATE:
+                           
+                           Время сделки истекло!
+                           
+                           """
                     f = True
-                if f :
+                if f:
                     for userId, msgId in data:
                         try:
                             if (str(tradeDetail['kftrade']['agent']) != str(userId)):
@@ -191,11 +211,11 @@ UPDATE:
                     'id': trade['id'],
                     'status': 'time_cancel',
                 }
-                
+
                 update_status = requests.post(URL_DJANGO + 'update/kf/trade/', json=data)
 
         await asyncio.sleep(1)
-        
+
         # except Exception as e:
         #     print('3', type(e), ' ', e)
         #     continue

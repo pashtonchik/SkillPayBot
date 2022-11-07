@@ -360,7 +360,7 @@ async def accept_payment(call: types.CallbackQuery, callback_data=dict, state=FS
 Статус: *Пришлите чек о переводе!*
 
             ''', parse_mode='Markdown')
-        
+
         await state.update_data(id=id, type='kf', message_id=msg.message_id)
         await Activity.acceptPayment.set()
 
@@ -485,7 +485,7 @@ async def get_photo(message: types.Message, state=FSMContext):
                 'cheque': f'kf_checks/kf{id}_{message.from_user.id}.pdf'
             }
             upload = requests.post(URL_DJANGO + 'update/kf/trade/', json=data)
-            
+
             if upload.status_code == 200:
                 await bot.delete_message(chat_id=message.from_user.id, message_id=msg_id)
                 msg = await message.reply(text=f'''
@@ -504,7 +504,8 @@ async def get_photo(message: types.Message, state=FSMContext):
                             change_status_agent = requests.post(URL_DJANGO + 'edit_agent_status/', json=body)
                             if change_status_agent.status_code == 200:
                                 # await bot.delete_message(chat_id=message.from_user.id, message_id=msg.message_id)
-                                await bot.edit_message_text(chat_id=message.from_user.id, message_id=msg.message_id ,text=f'''
+                                await bot.edit_message_text(chat_id=message.from_user.id, message_id=msg.message_id,
+                                                            text=f'''
 Заявка: KF — {id}
 Инструмент: {get_current_info.json()['kftrade']['type']}
 Сумма: `{get_current_info.json()['kftrade']['amount']}` 
@@ -517,7 +518,7 @@ async def get_photo(message: types.Message, state=FSMContext):
                                 await message.answer('Произошла ошибка, свяжитесь с админом.')
                             break
                     await asyncio.sleep(0)
-                
+
                 await state.finish()
             else:
                 await message.answer('Произошла ошибка при скачивании документа. Свяжитесь с админом.')

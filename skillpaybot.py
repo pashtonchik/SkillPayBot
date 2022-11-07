@@ -94,10 +94,9 @@ def create_message_text(trade):
 '''
     elif trade['type'] == 'gar_trade':
         messageText = f'''
-        Заявка Gatantex — {trade['data']['id']}                     
-        Инструмент: {trade['data']['type']}
-        Сумма: `{trade['data']['amount']}`
-                                '''
+Новая сделка! Покупка {trade['data']['cryptocurrency']} за {trade['data']['currency']}
+Сумма: {trade['data']['currency_amount']} {trade['data']['currency']}
+'''
     else:
         messageText = f'''
 Заявка KF — {trade['data']['id']}                     
@@ -144,19 +143,16 @@ async def check_trades(dp):
             for trade in trades:
 
                 operators = trade['recipients']
-
                 kb_accept_order = create_button_accept(trade_id=trade['data']['id'],
                                                        trade_type=trade['type'])
-
                 for operator in operators:
 
-                    try:
-                        message = await bot.send_message(int(operator), create_message_text(trade), \
-                                                         reply_markup=kb_accept_order, parse_mode='Markdown')
-                        add_to_database(message.chat.id, message.message_id, trade['data']['id'], trade['type'])
-                    except Exception as e:
-                        print(e)
-                        continue
+                    message = await bot.send_message(int(operator), create_message_text(trade), \
+                                                     reply_markup=kb_accept_order, parse_mode='Markdown')
+                    add_to_database(message.chat.id, message.message_id, trade['data']['id'], trade['type'])
+                    print('message sended')
+    
+
 
         trades = select_trades_from_database('kf')
         for trade in trades:
@@ -201,6 +197,7 @@ async def check_trades(dp):
                             print(e)
                             continue
         req_kftrades = requests.get(URL_DJANGO + 'get/free/kftrades/')
+        print(req_kftrades)
         kf_trades = req_kftrades.json()
 
         for trade in kf_trades:

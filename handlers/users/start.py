@@ -1,14 +1,10 @@
 import asyncio
-from cgitb import text
-from email import header
-from wave import Wave_write
 from aiogram import types
 from aiogram.dispatcher.filters.builtin import CommandStart
 from keyboards.inline.mainMenu import kb_menu_main, kb_menu_job, kb_accept_order
 from keyboards.inline.mainMenu import kb_menu_main, kb_menu_job
 from loader import dp
 import time
-import requests
 import json
 from aiogram.utils.callback_data import CallbackData
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
@@ -18,13 +14,12 @@ import random
 from settings import URL_DJANGO, cheques_base
 from states.activity.activity_state import Activity
 from aiogram.dispatcher import FSMContext
-from aiogram.dispatcher.filters import state
 
 import requests
 from jose import jws
 from jose.constants import ALGORITHMS
-
 from loader import bot
+import garantexAPI.auth
 
 trade_cb = CallbackData("trade", "type", "id", "action")
 
@@ -284,6 +279,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
             await call.answer('Заявка уже в работе.', show_alert=True)
             await call.message.delete()
 
+
     elif callback_data['type'] == 'kf':
         get_pay_info = requests.get(URL_DJANGO + f'kf/trade/detail/{trade_id}/')
 
@@ -315,6 +311,62 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
             await call.answer('Заявка уже в работе.', show_alert=True)
             await call.message.delete()
 
+
+#_______________GATANTEX__________________________GATANTEX________________________GATANTEX________________________
+    if callback_data['type'] == 'garantex':
+        get_trade_info = requests.get(URL_DJANGO + f'gar/trade/detail/{trade_id}/')
+        print(get_trade_info.status_code, get_trade_info.url)
+        print(get_trade_info.json())
+        print(str(get_trade_info.json()['gar_trade']['agent']))
+        if not get_trade_info.json()['gar_trade']['agent'] or str(get_trade_info.json()['gar_trade']['agent']) == str(
+                call.from_user.id):
+
+            data = {
+                'id': str(trade_id),
+                'agent': str(call.from_user.id),
+            }
+            set_agent_trade = requests.post(URL_DJANGO + f'update/garantex/trade/', json=data)
+
+            get_current_info = requests.get(URL_DJANGO + f'gar/trade/detail/{trade_id}/')
+            print(get_current_info.status_code, get_current_info)
+            if get_current_info.json()['gar_trade']['agent'] == str(call.from_user.id):
+
+#=====================================api garantex=====================================================================
+                auth = get_current_info.json()['auth']
+                jwt = garantexAPI.auth.get_jwt(
+                    private_key=auth['private_key'],
+                    uid=auth['uid'],
+                )
+
+                proxy = get_current_info.json()['user']['proxy']
+
+                data = {
+                    'type': 'confirm-trade'
+                }
+
+                url = f'https://bitzlato.com/api/p2p/trade/{trade_id}/'
+                try:
+                    req_change_type = requests.post(url, headers=headers, proxies=proxy, json=data)
+
+                    if req_change_type.status_code == 200:
+                        await call.answer('Вы успешно взяли заявку в работу!', show_alert=True)
+                        await call.message.edit_text(f'''
+Переведите {get_current_info.json()['trade']['currency_amount']} {get_current_info.json()['trade']['currency']}
+Комментарий: {get_current_info.json()['trade']['details']}
+Реквизиты: {get_current_info.json()['trade']['counterDetails']} {get_current_info.json()['paymethod_description']}
+                                                        ''', reply_markup=kb_accept_payment)
+                        await Activity.acceptOrder.set()
+                    else:
+                        await call.answer('Произошла ошибка, нажмите кнопку заново.')
+                except Exception as e:
+                    await call.answer('Произошла ошибка, нажмите кнопку заново.')
+
+            else:
+                await call.answer("Заявка уже в работе", show_alert=True)
+                await call.message.delete()
+        else:
+            await call.answer("Заявка уже в работе", show_alert=True)
+            await call.message.delete()
 
 @dp.callback_query_handler(trade_cb.filter(action=['accept_payment']), state=Activity.acceptOrder)
 async def accept_payment(call: types.CallbackQuery, callback_data=dict, state=FSMContext):
@@ -363,7 +415,18 @@ async def accept_payment(call: types.CallbackQuery, callback_data=dict, state=FS
 
         await state.update_data(id=id, type='kf', message_id=msg.message_id)
         await Activity.acceptPayment.set()
+# _______________GATANTEX__________________________GATANTEX________________________GATANTEX________________________
+    elif callback_data['type'] == 'gatantex':
+        get_current_info = requests.get(URL_DJANGO + f'gar/trade/detail/{id}/')
+        msg = await call.message.edit_text(f'''
+Заявка: Garantex — {id}
+Инструмент: {get_current_info.json()['gar_trade']['type']}
+Сумма: `{get_current_info.json()['gar_trade']['amount']}` 
+Адресат: `{get_current_info.json()['gar_trade']['card_number']}`
 
+Статус: *Пришлите чек о переводе!*
+
+                    ''', parse_mode='Markdown')
 
 @dp.callback_query_handler(trade_cb.filter(action=['cancel_payment']), state=Activity.acceptOrder)
 async def accept_payment(call: types.CallbackQuery, callback_data=dict, state=FSMContext):
@@ -495,6 +558,8 @@ async def get_photo(message: types.Message, state=FSMContext):
 Адресат: `{get_current_info.json()['kftrade']['card_number']}`
 
 Статус: *Производится проверка чека!*
+
+
 
 ''', parse_mode='Markdown')
                 while 1:

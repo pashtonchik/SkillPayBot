@@ -19,8 +19,8 @@ import requests
 from jose import jws
 from jose.constants import ALGORITHMS
 from loader import bot
-import garantexAPI.auth
-import garantexAPI.chat
+from garantexAPI.auth import *
+from garantexAPI.chat import *
 
 trade_cb = CallbackData("trade", "type", "id", "action")
 
@@ -313,7 +313,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
             await call.message.delete()
 
 
-#_______________GATANTEX__________________________GATANTEX________________________GATANTEX________________________
+#_______________GAANTEX__________________________GATANTEX________________________GATANTEX________________________
     elif callback_data['type'] == 'garantex':
         get_trade_info = requests.get(URL_DJANGO + f'gar/trade/detail/{trade_id}/')
         print(get_trade_info.status_code, get_trade_info.url)
@@ -341,6 +341,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
         else:
             await call.answer("Заявка уже в работе", show_alert=True)
             await call.message.delete()
+
 
 @dp.callback_query_handler(trade_cb.filter(action=['accept_payment']), state=Activity.acceptOrder)
 async def accept_payment(call: types.CallbackQuery, callback_data=dict, state=FSMContext):
@@ -403,6 +404,8 @@ async def accept_payment(call: types.CallbackQuery, callback_data=dict, state=FS
 
                     ''', parse_mode='Markdown')
         await Activity.acceptPayment.set()
+
+
 @dp.callback_query_handler(trade_cb.filter(action=['cancel_payment']), state=Activity.acceptOrder)
 async def accept_payment(call: types.CallbackQuery, callback_data=dict, state=FSMContext):
     id = str(callback_data['id'])
@@ -571,15 +574,33 @@ async def get_photo(message: types.Message, state=FSMContext):
 
         get_trade_detail = requests.get(URL_DJANGO + f'gar/trade/detail/{id}/')
         auth = get_trade_detail.json()['auth']
-        jwt = garantexAPI.auth.get_jwt(uid=auth['uid'], private_key=auth['private_key'])
-        garantexAPI.chat.send_message(jwt, message='оплатил', deal_id=id)
+        jwt = get_jwt(uid=auth['uid'], private_key=auth['private_key'])
 
-        file_name = f'/root/prod/SkillPay-Django/tgchecks/{id}_{message.from_user.id}.png'
+        file_name = f'/root/prod/SkillPay-Django/gar_checks/{id}_{message.from_user.id}.pdf'
+
+        files = {'file': open(file_name, 'rb')}
+
         await message.photo[-1].download(file_name)
-        send_message = f'https://bitzlato.bz/api/p2p/trade/{id}/chat/'
 
+        data = {'deal_id': id, 'message': 'чек'}
+        data = {
+            'id': id,
+            'cheque': f'gar_checks/kf{id}_{message.from_user.id}.pdf'
+        }
+
+        upload = requests.post(URL_DJANGO + 'update/gar/trade/', json=data)
+
+        header = {
+            'Authorization': f'Bearer {jwt}'
+        }
+
+        files = {'file': open(file_name, 'rb')}
+
+        message = requests.post(f'https://garantex.io/api/v2/otc/chats/message',
+                                headers=header, data=data, files=files)
 
         asyncio.create_task(confirm_payment(id=id, message=message, state=state))
+
 
 @dp.callback_query_handler(text='Назад')
 async def back(call: types.CallbackQuery):

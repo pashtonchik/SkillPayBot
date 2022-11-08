@@ -151,21 +151,19 @@ async def check_trades(dp):
                                                      reply_markup=kb_accept_order, parse_mode='Markdown')
                     add_to_database(message.chat.id, message.message_id, trade['data']['id'], trade['type'])
                     print('message sended')
-    
-
 
         trades = select_trades_from_database('kf')
         for trade in trades:
             trade = trade[0]
             tradeDetail = requests.get(URL_DJANGO + f'kf/trade/detail/{trade}/')
 
-            if (tradeDetail.status_code == 200):
+            if tradeDetail.status_code == 200:
                 tradeDetail = tradeDetail.json()
                 data = select_data_from_database(trade_id=trade, type='kf')
                 text = edited_message_text(tradeDetail['kftrade'])
                 print(tradeDetail['kftrade']['agent'])
                 f = False
-                if (tradeDetail['kftrade']['agent']):
+                if tradeDetail['kftrade']['agent']:
                     text = text + \
                            """
                            
@@ -175,8 +173,8 @@ async def check_trades(dp):
                            
                            """
                     f = True
-                elif (tradeDetail['kftrade']['status'] == 'closed' or tradeDetail['kftrade'][
-                    'status'] == 'time_cancel'):
+                elif tradeDetail['kftrade']['status'] == 'closed' or tradeDetail['kftrade'][
+                    'status'] == 'time_cancel':
                     text = text + \
                            """
                            
@@ -189,7 +187,7 @@ async def check_trades(dp):
                 if f:
                     for userId, msgId in data:
                         try:
-                            if (str(tradeDetail['kftrade']['agent']) != str(userId)):
+                            if str(tradeDetail['kftrade']['agent']) != str(userId):
                                 print('НЕРАВНО', userId, tradeDetail['kftrade']['agent'])
                                 await bot.delete_message(chat_id=userId, message_id=msgId)
                             delete_from_database(userId, msgId, trade, 'kf')

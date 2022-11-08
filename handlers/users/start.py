@@ -20,6 +20,7 @@ from jose import jws
 from jose.constants import ALGORITHMS
 from loader import bot
 import garantexAPI.auth
+import garantexAPI.chat
 
 trade_cb = CallbackData("trade", "type", "id", "action")
 
@@ -313,7 +314,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
 
 
 #_______________GATANTEX__________________________GATANTEX________________________GATANTEX________________________
-    if callback_data['type'] == 'garantex':
+    elif callback_data['type'] == 'garantex':
         get_trade_info = requests.get(URL_DJANGO + f'gar/trade/detail/{trade_id}/')
         print(get_trade_info.status_code, get_trade_info.url)
         print(get_trade_info.json())
@@ -329,47 +330,21 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
 
             get_current_info = requests.get(URL_DJANGO + f'gar/trade/detail/{trade_id}/')
             print(get_current_info.status_code, get_current_info)
-            if get_current_info.json()['gar_trade']['agent'] == str(call.from_user.id):
 
-#=====================================api garantex=====================================================================
-                auth = get_current_info.json()['auth']
-                jwt = garantexAPI.auth.get_jwt(
-                    private_key=auth['private_key'],
-                    uid=auth['uid'],
-                )
 
-                proxy = get_current_info.json()['user']['proxy']
-
-                data = {
-                    'type': 'confirm-trade'
-                }
-
-                url = f'https://bitzlato.com/api/p2p/trade/{trade_id}/'
-                try:
-                    req_change_type = requests.post(url, headers=headers, proxies=proxy, json=data)
-
-                    if req_change_type.status_code == 200:
-                        await call.answer('Вы успешно взяли заявку в работу!', show_alert=True)
-                        await call.message.edit_text(f'''
-Переведите {get_current_info.json()['trade']['currency_amount']} {get_current_info.json()['trade']['currency']}
-Комментарий: {get_current_info.json()['trade']['details']}
-Реквизиты: {get_current_info.json()['trade']['counterDetails']} {get_current_info.json()['paymethod_description']}
+            await call.answer('Вы успешно взяли заявку в работу!', show_alert=True)
+            await call.message.edit_text(f'''
+Переведите {get_current_info.json()['gar_trade']['currency_amount']} {get_current_info.json()['gar_trade']['currency']}
+Реквизиты: {get_current_info.json()['gar_trade']['details']} {get_current_info.json()['paymethod_description']}
                                                         ''', reply_markup=kb_accept_payment)
-                        await Activity.acceptOrder.set()
-                    else:
-                        await call.answer('Произошла ошибка, нажмите кнопку заново.')
-                except Exception as e:
-                    await call.answer('Произошла ошибка, нажмите кнопку заново.')
-
-            else:
-                await call.answer("Заявка уже в работе", show_alert=True)
-                await call.message.delete()
+            await Activity.acceptOrder.set()
         else:
             await call.answer("Заявка уже в работе", show_alert=True)
             await call.message.delete()
 
 @dp.callback_query_handler(trade_cb.filter(action=['accept_payment']), state=Activity.acceptOrder)
 async def accept_payment(call: types.CallbackQuery, callback_data=dict, state=FSMContext):
+    print(callback_data)
     id = str(callback_data['id'])
     if callback_data['type'] == 'BZ':
 
@@ -415,19 +390,19 @@ async def accept_payment(call: types.CallbackQuery, callback_data=dict, state=FS
 
         await state.update_data(id=id, type='kf', message_id=msg.message_id)
         await Activity.acceptPayment.set()
-# _______________GATANTEX__________________________GATANTEX________________________GATANTEX________________________
-    elif callback_data['type'] == 'gatantex':
+#_______________GATANTEX__________________________GATANTEX________________________GATANTEX________________________
+    elif callback_data['type'] == 'garantex':
         get_current_info = requests.get(URL_DJANGO + f'gar/trade/detail/{id}/')
-        msg = await call.message.edit_text(f'''
+        await call.message.edit_text(f'''
 Заявка: Garantex — {id}
-Инструмент: {get_current_info.json()['gar_trade']['type']}
-Сумма: `{get_current_info.json()['gar_trade']['amount']}` 
-Адресат: `{get_current_info.json()['gar_trade']['card_number']}`
+Инструмент: {get_current_info.json()['gar_trade']['paymethod']}
+Сумма: `{get_current_info.json()['gar_trade']['currency_amount']}` 
+Адресат: `{get_current_info.json()['gar_trade']['details']}`
 
 Статус: *Пришлите чек о переводе!*
 
                     ''', parse_mode='Markdown')
-
+        await Activity.acceptPayment.set()
 @dp.callback_query_handler(trade_cb.filter(action=['cancel_payment']), state=Activity.acceptOrder)
 async def accept_payment(call: types.CallbackQuery, callback_data=dict, state=FSMContext):
     id = str(callback_data['id'])
@@ -590,7 +565,21 @@ async def get_photo(message: types.Message, state=FSMContext):
                 await state.finish()
         else:
             await message.reply(text='Вы отправили чек не в том формате, пришлите заново в формате pdf')
+#_______________GATANTEX__________________________GATANTEX________________________GATANTEX__________________
+    elif data['type'] == 'garantex':
+        id = data['id']
 
+        get_trade_detail = requests.get(URL_DJANGO + f'gar/trade/detail/{id}/')
+        auth = get_trade_detail.json()['auth']
+        jwt = garantexAPI.auth.get_jwt(uid=auth['uid'], private_key=auth['private_key'])
+        garantexAPI.chat.send_message(jwt, message='оплатил', deal_id=id)
+
+        file_name = f'/root/prod/SkillPay-Django/tgchecks/{id}_{message.from_user.id}.png'
+        await message.photo[-1].download(file_name)
+        send_message = f'https://bitzlato.bz/api/p2p/trade/{id}/chat/'
+
+
+        asyncio.create_task(confirm_payment(id=id, message=message, state=state))
 
 @dp.callback_query_handler(text='Назад')
 async def back(call: types.CallbackQuery):

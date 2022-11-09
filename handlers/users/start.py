@@ -584,23 +584,13 @@ async def get_photo(message: types.Message, state=FSMContext):
         await message.document.download(destination_file=file_name)
 
         data = {
-            'id': id,
-            'cheque': f'gar_checks/gar{id}_{message.from_user.id}.pdf'
+            'id': str(id),
+            'cheque': file_name,
         }
 
         print(data)
 
         upload = requests.post(URL_DJANGO + 'update/gar/trade/', json=data)
-
-
-        files = {'file': open(file_name, 'rb')}
-
-
-        data = {'deal_id': id, 'message': 'чек'}
-        data = {
-            'id': id,
-            'cheque': f'gar_checks/gar{id}_{message.from_user.id}.pdf'
-        }
 
         upload = requests.post(URL_DJANGO + 'update/gar/trade/', json=data)
 

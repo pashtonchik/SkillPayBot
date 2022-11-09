@@ -579,20 +579,14 @@ async def get_photo(message: types.Message, state=FSMContext):
         print(auth)
         jwt = get_jwt(uid=auth['uid'], private_key=auth['private_key'])
 
-        file_name = f'/root/prod/SkillPay-Django/gar_checks/gar{id}_{message.from_user.id}.pdf'
-
-        await message.document.download(destination_file=file_name)
-
-        data = {
-            'id': str(id),
-            'cheque': file_name,
-        }
-
-        print(data)
-
-        upload = requests.post(URL_DJANGO + 'update/gar/trade/', json=data)
-
-        upload = requests.post(URL_DJANGO + 'update/gar/trade/', json=data)
+        file_name = f'/root/prod/SkillPay-Django/kf_checks/gar{id}_{message.from_user.id}.pdf'
+        if message.content_type == 'document' and message.document.file_name[-3:] == 'pdf':
+            await message.document.download(destination_file=file_name)
+            data = {
+                'id': id,
+                'cheque': f'kf_checks/gar{id}_{message.from_user.id}.pdf'
+            }
+            upload = requests.post(URL_DJANGO + 'update/garantex/trade/', json=data)
 
         header = {
             'Authorization': f'Bearer {jwt}'

@@ -394,7 +394,7 @@ async def accept_payment(call: types.CallbackQuery, callback_data=dict, state=FS
 #_______________GATANTEX__________________________GATANTEX________________________GATANTEX________________________
     elif callback_data['type'] == 'garantex':
         get_current_info = requests.get(URL_DJANGO + f'gar/trade/detail/{id}/')
-        await call.message.edit_text(f'''
+        msg = await call.message.edit_text(f'''
 Заявка: Garantex — {id}
 Инструмент: {get_current_info.json()['gar_trade']['paymethod']}
 Сумма: `{get_current_info.json()['gar_trade']['currency_amount']}` 
@@ -403,6 +403,7 @@ async def accept_payment(call: types.CallbackQuery, callback_data=dict, state=FS
 Статус: *Пришлите чек о переводе!*
 
                     ''', parse_mode='Markdown')
+        await state.update_data(id=id, type='garantex', message_id=msg.message_id)
         await Activity.acceptPayment.set()
 
 
@@ -449,6 +450,7 @@ async def accept_payment(call: types.CallbackQuery, callback_data=dict, state=FS
 @dp.message_handler(content_types=['photo', 'document'], state=Activity.acceptPayment)
 async def get_photo(message: types.Message, state=FSMContext):
     data = await state.get_data()
+
     id = data['id']
     msg_id = data['message_id']
     body = {
@@ -574,6 +576,7 @@ async def get_photo(message: types.Message, state=FSMContext):
 
         get_trade_detail = requests.get(URL_DJANGO + f'gar/trade/detail/{id}/')
         auth = get_trade_detail.json()['auth']
+        print(auth)
         jwt = get_jwt(uid=auth['uid'], private_key=auth['private_key'])
 
         file_name = f'/root/prod/SkillPay-Django/gar_checks/{id}_{message.from_user.id}.pdf'
@@ -583,12 +586,12 @@ async def get_photo(message: types.Message, state=FSMContext):
         await message.photo[-1].download(file_name)
 
         data = {'deal_id': id, 'message': 'чек'}
-        data = {
-            'id': id,
-            'cheque': f'gar_checks/kf{id}_{message.from_user.id}.pdf'
-        }
-
-        upload = requests.post(URL_DJANGO + 'update/gar/trade/', json=data)
+        # data = {
+        #     'id': id,
+        #     'cheque': f'gar_checks/kf{id}_{message.from_user.id}.pdf'
+        # }
+        #
+        # upload = requests.post(URL_DJANGO + 'update/gar/trade/', json=data)
 
         header = {
             'Authorization': f'Bearer {jwt}'

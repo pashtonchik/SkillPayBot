@@ -588,6 +588,8 @@ async def get_photo(message: types.Message, state=FSMContext):
             'cheque': f'gar_checks/gar{id}_{message.from_user.id}.pdf'
         }
 
+        print(data)
+
         upload = requests.post(URL_DJANGO + 'update/gar/trade/', json=data)
 
 

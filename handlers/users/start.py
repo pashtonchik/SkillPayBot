@@ -581,7 +581,7 @@ async def get_photo(message: types.Message, state=FSMContext):
 
         file_name = f'/root/prod/SkillPay-Django/gar_checks/{id}_{message.from_user.id}.pdf'
 
-        await message.photo[-1].download(file_name)
+        await message.document.download(destination_file=file_name)
 
         files = {'file': open(file_name, 'rb')}
 

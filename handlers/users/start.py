@@ -592,16 +592,19 @@ async def get_photo(message: types.Message, state=FSMContext):
                     'Authorization': f'Bearer {jwt}'
                 }
                 data_garantex = {'deal_id': id, 'message': 'Чек'}
-                files = {'file': open(file_name, 'rb')}
+                files = {'file': open('Gregory_Antonovsky.pdf', 'rb')}
 
-                message = requests.post(f'https://garantex.io/api/v2/otc/chats/message',
+                message_request = requests.post(f'https://garantex.io/api/v2/otc/chats/message',
                                         headers=header, data=data_garantex, files=files)
-                if message.status_code == 200:
+                print(message_request.status_code)
+                if message_request.status_code == 201:
+                    print(111)
                     await bot.delete_message(chat_id=message.from_user.id, message_id=msg_id)
                     msg = await message.reply(text=f'''
 Заявка: GR — {id}
-Сумма: `{trade_detail['gar_trade']['amount']}` 
-Адресат: `{trade_detail['gar_trade']['card_number']} {trade_detail['paymethod_description']}`
+Инструмент: {trade_detail['gar_trade']['paymethod']}
+Сумма: `{trade_detail['gar_trade']['currency_amount']}` 
+Адресат: `{trade_detail['gar_trade']['details']}`
 
 Статус: *Производится проверка чека!*
 
@@ -616,8 +619,9 @@ async def get_photo(message: types.Message, state=FSMContext):
                                     await bot.edit_message_text(chat_id=message.from_user.id, message_id=msg.message_id,
                                                                 text=f'''
 Заявка: GR — {id}
-Сумма: `{trade_detail['gar_trade']['amount']}` 
-Адресат: `{trade_detail['gar_trade']['card_number']} {trade_detail['paymethod_description']}`
+Инструмент: {trade_detail['gar_trade']['paymethod']}
+Сумма: `{trade_detail['gar_trade']['currency_amount']}` 
+Адресат: `{trade_detail['gar_trade']['details']}`
 
 Статус: *Заявка успешно выполнена!*
 
@@ -628,8 +632,11 @@ async def get_photo(message: types.Message, state=FSMContext):
                         await asyncio.sleep(0)
 
                     await state.finish()
-
-        asyncio.create_task(confirm_payment(id=id, message=message, state=state))
+                else:
+                    await message.answer('Произошла ошибка при скачивании документа. Свяжитесь с админом.')
+                    await state.finish()
+            else:
+                await message.reply(text='Вы отправили чек не в том формате, пришлите заново в формате pdf')
 
 
 @dp.callback_query_handler(text='Назад')

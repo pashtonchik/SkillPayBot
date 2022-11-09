@@ -119,9 +119,9 @@ def edited_message_text(trade):
 '''
     elif trade['type'] == 'gar_trade':
         messageText = f'''
-    Новая сделка! Покупка 
-    Сумма: {trade['data']['amount']} RUB
-    '''
+Новая сделка! Покупка 
+Сумма: {trade['data']['amount']} RUB
+'''
     else:
         messageText = f'''
 Заявка KF — {trade['id']}                     
@@ -135,10 +135,10 @@ async def check_trades(dp):
     while 1:
         # try:
         req_django = requests.get(URL_DJANGO + 'trades/active/')
-        print(req_django.status_code)
+        # print(req_django.status_code)
         if req_django.status_code == 200:
             trades = req_django.json()
-            print(trades)
+            # print(trades)
 
             for trade in trades:
 

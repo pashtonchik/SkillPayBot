@@ -575,9 +575,9 @@ async def get_photo(message: types.Message, state=FSMContext):
         id = data['id']
 
         get_trade_detail = requests.get(URL_DJANGO + f'gar/trade/detail/{id}/')
-        auth = get_trade_detail.json()['auth']
+        trade_detail = get_trade_detail.json()
         print(auth)
-        jwt = get_jwt(uid=auth['uid'], private_key=auth['private_key'])
+        jwt = get_jwt(uid=trade_detail['auth']['uid'], private_key=trade_detail['auth']['private_key'])
 
         file_name = f'/root/prod/SkillPay-Django/gar_checks/gar{id}_{message.from_user.id}.pdf'
         if message.content_type == 'document' and message.document.file_name[-3:] == 'pdf':
@@ -587,15 +587,48 @@ async def get_photo(message: types.Message, state=FSMContext):
                 'cheque': f'gar_checks/gar{id}_{message.from_user.id}.pdf'
             }
             upload = requests.post(URL_DJANGO + 'update/garantex/trade/', json=data)
-        jwt = get_jwt(uid=auth['uid'], private_key=auth['private_key'])
-        header = {
-            'Authorization': f'Bearer {jwt}'
-        }
-        data_garantex = {'deal_id': id, 'message': 'Чек'}
-        files = {'file': open(file_name, 'rb')}
+            if upload.status_code == 200:
+                jwt = get_jwt(uid=trade_detail['auth']['uid'], private_key=trade_detail['auth']['private_key'])
+                header = {
+                    'Authorization': f'Bearer {jwt}'
+                }
+                data_garantex = {'deal_id': id, 'message': 'Чек'}
+                files = {'file': open(file_name, 'rb')}
 
-        message = requests.post(f'https://garantex.io/api/v2/otc/chats/message',
-                                headers=header, data=data_garantex, files=files)
+                message = requests.post(f'https://garantex.io/api/v2/otc/chats/message',
+                                        headers=header, data=data_garantex, files=files)
+                if message.status_code == 200:
+                    await bot.delete_message(chat_id=message.from_user.id, message_id=msg_id)
+                    msg = await message.reply(text=f'''
+Заявка: GR — {id}
+Сумма: `{trade_detail['gar_trade']['amount']}` 
+Адресат: `{trade_detail['gar_trade']['card_number']} {trade_detail['paymethod_description']}`
+
+Статус: *Производится проверка чека!*
+
+                    ''', parse_mode='Markdown')
+
+                    while 1:
+                        req_django = requests.get(URL_DJANGO + f'gar/trade/detail/{id}/')
+                        if req_django.status_code == 200:
+                            if req_django.json()['gar_trade']['status'] == 'completed':
+                                change_status_agent = requests.post(URL_DJANGO + 'edit_agent_status/', json=body)
+                                if change_status_agent.status_code == 200:
+                                    await bot.edit_message_text(chat_id=message.from_user.id, message_id=msg.message_id,
+                                                                text=f'''
+Заявка: GR — {id}
+Сумма: `{trade_detail['gar_trade']['amount']}` 
+Адресат: `{trade_detail['gar_trade']['card_number']} {trade_detail['paymethod_description']}`
+
+Статус: *Заявка успешно выполнена!*
+
+                    ''', parse_mode='Markdown')
+                                else:
+                                    await message.answer('Произошла ошибка, свяжитесь с админом.')
+                                break
+                        await asyncio.sleep(0)
+
+                    await state.finish()
 
         asyncio.create_task(confirm_payment(id=id, message=message, state=state))
 

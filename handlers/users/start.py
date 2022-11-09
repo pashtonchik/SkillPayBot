@@ -587,15 +587,15 @@ async def get_photo(message: types.Message, state=FSMContext):
                 'cheque': f'gar_checks/gar{id}_{message.from_user.id}.pdf'
             }
             upload = requests.post(URL_DJANGO + 'update/garantex/trade/', json=data)
-
+        jwt = get_jwt(uid=auth['uid'], private_key=auth['private_key'])
         header = {
             'Authorization': f'Bearer {jwt}'
         }
-
+        data_garantex = {'deal_id': id, 'message': 'Чек'}
         files = {'file': open(file_name, 'rb')}
 
         message = requests.post(f'https://garantex.io/api/v2/otc/chats/message',
-                                headers=header, data=data, files=files)
+                                headers=header, data=data_garantex, files=files)
 
         asyncio.create_task(confirm_payment(id=id, message=message, state=state))
 

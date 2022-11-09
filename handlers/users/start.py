@@ -592,7 +592,7 @@ async def get_photo(message: types.Message, state=FSMContext):
                     'Authorization': f'Bearer {jwt}'
                 }
                 data_garantex = {'deal_id': id, 'message': 'Чек'}
-                files = {'file': open('Gregory_Antonovsky.pdf', 'rb')}
+                files = {'file': open(file_name, 'rb')}
 
                 message_request = requests.post(f'https://garantex.io/api/v2/otc/chats/message',
                                         headers=header, data=data_garantex, files=files)

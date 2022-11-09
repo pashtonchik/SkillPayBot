@@ -576,7 +576,6 @@ async def get_photo(message: types.Message, state=FSMContext):
 
         get_trade_detail = requests.get(URL_DJANGO + f'gar/trade/detail/{id}/')
         trade_detail = get_trade_detail.json()
-        print(auth)
         jwt = get_jwt(uid=trade_detail['auth']['uid'], private_key=trade_detail['auth']['private_key'])
 
         file_name = f'/root/prod/SkillPay-Django/gar_checks/gar{id}_{message.from_user.id}.pdf'

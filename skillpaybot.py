@@ -1,6 +1,8 @@
 import asyncio
 from aiogram import executor, types
 import requests
+from aiogram.utils.exceptions import MessageToDeleteNotFound
+
 import middlewares, filters, handlers
 from loader import dp, bot
 from settings import URL_DJANGO
@@ -208,7 +210,62 @@ async def check_trades(dp):
                 }
 
                 update_status = requests.post(URL_DJANGO + 'update/kf/trade/', json=data)
-
+        gar_trades_db = select_trades_from_database('gar_trade')
+        if gar_trades_db:
+            gar_trades = [i[0] for i in gar_trades_db]
+            gar_trades = list(set(gar_trades))
+        else:
+            gar_trades = None
+        print('data in db: ', gar_trades)
+        print('gar_trades: ', gar_trades)
+        req = {
+            'gar_trade': gar_trades
+        }
+        print(req)
+        if gar_trades:
+            gar_trades_data = requests.post(URL_DJANGO + 'get/active/trades/for/delete/', json=req)
+            status_code = gar_trades_data.status_code
+        else:
+            status_code = 0
+        if status_code == 200:
+            gar_trades_data = gar_trades_data.json()['gar_trade']
+            print('#######', gar_trades_data)
+            for trade in gar_trades_data:
+                msgs = select_data_from_database(trade['id'], 'gar_trade')
+                if trade['status'] == 'canceled':
+                    for i in msgs:
+                        try:
+                            await bot.delete_message(i[0], i[1])
+                            delete_from_database(
+                                u_id=i[0], msg_id=i[1],
+                                trade_id=trade['id'], type='gar_trade')
+                        except MessageToDeleteNotFound:
+                            pass
+                elif trade['status'] == 'completed':
+                    for i in msgs:
+                        if i[0] != int(trade['agent']):
+                            try:
+                                await bot.delete_message(i[0], i[1])
+                                delete_from_database(
+                                    u_id=i[0], msg_id=i[1],
+                                    trade_id=trade['id'], type='gar_trade')
+                            except MessageToDeleteNotFound:
+                                pass
+                elif trade['status'] == 'pending':
+                    if trade['agent']:
+                        print('#######', f' есть агент{trade["agent"]}')
+                        print(msgs)
+                        for i in msgs:
+                            if i[0] != int(trade['agent']):
+                                try:
+                                    await bot.delete_message(i[0], i[1])
+                                    delete_from_database(
+                                        u_id=i[0], msg_id=i[1],
+                                        trade_id=trade['id'], type='gar_trade')
+                                except MessageToDeleteNotFound:
+                                    pass
+                    else:
+                        pass
         await asyncio.sleep(1)
 
         # except Exception as e:

@@ -39,7 +39,7 @@ deal_id - id сделки, в чат которой надо отправить 
         'Authorization': f'Bearer {jwt}'
     }
     params = kwargs
-    message = requests.post(f'https://{host}/api/v2/otc/chats/message')
+    message = requests.post(f'https://{host}/api/v2/otc/chats/message', json=params)
     if message.status_code == 200:
         return True
     else:

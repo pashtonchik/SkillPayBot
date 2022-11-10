@@ -5,3 +5,4 @@ class Activity(StatesGroup):
     acceptOrder = State()
     acceptPayment = State()
     getPhoto = State()
+    add_reason_cancel = State()

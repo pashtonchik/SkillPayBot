@@ -152,7 +152,6 @@ async def check_trades(dp):
                     message = await bot.send_message(int(operator), create_message_text(trade), \
                                                      reply_markup=kb_accept_order, parse_mode='Markdown')
                     add_to_database(message.chat.id, message.message_id, trade['data']['id'], trade['type'])
-                    print('message sended')
 
         trades = select_trades_from_database('kf')
         for trade in trades:
@@ -163,7 +162,6 @@ async def check_trades(dp):
                 tradeDetail = tradeDetail.json()
                 data = select_data_from_database(trade_id=trade, type='kf')
                 text = edited_message_text(tradeDetail['kftrade'])
-                print(tradeDetail['kftrade']['agent'])
                 f = False
                 if tradeDetail['kftrade']['agent']:
                     text = text + \
@@ -190,14 +188,12 @@ async def check_trades(dp):
                     for userId, msgId in data:
                         try:
                             if str(tradeDetail['kftrade']['agent']) != str(userId):
-                                print('НЕРАВНО', userId, tradeDetail['kftrade']['agent'])
                                 await bot.delete_message(chat_id=userId, message_id=msgId)
                             delete_from_database(userId, msgId, trade, 'kf')
                         except Exception as e:
                             print(e)
                             continue
         req_kftrades = requests.get(URL_DJANGO + 'get/free/kftrades/')
-        print(req_kftrades)
         kf_trades = req_kftrades.json()
 
         for trade in kf_trades:
@@ -216,12 +212,9 @@ async def check_trades(dp):
             gar_trades = list(set(gar_trades))
         else:
             gar_trades = None
-        print('data in db: ', gar_trades)
-        print('gar_trades: ', gar_trades)
         req = {
             'gar_trade': gar_trades
         }
-        print(req)
         if gar_trades:
             gar_trades_data = requests.post(URL_DJANGO + 'get/active/trades/for/delete/', json=req)
             status_code = gar_trades_data.status_code
@@ -229,7 +222,6 @@ async def check_trades(dp):
             status_code = 0
         if status_code == 200:
             gar_trades_data = gar_trades_data.json()['gar_trade']
-            print('#######', gar_trades_data)
             for trade in gar_trades_data:
                 msgs = select_data_from_database(trade['id'], 'gar_trade')
                 if trade['status'] == 'canceled':
@@ -253,8 +245,6 @@ async def check_trades(dp):
                                 pass
                 elif trade['status'] == 'pending':
                     if trade['agent']:
-                        print('#######', f' есть агент{trade["agent"]}')
-                        print(msgs)
                         for i in msgs:
                             if i[0] != int(trade['agent']):
                                 try:

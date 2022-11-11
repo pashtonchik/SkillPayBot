@@ -50,6 +50,15 @@ def select_data_from_database(trade_id, type):
     con.close()
     return data
 
+def select_message_from_database(u_id):
+    con = sqlite3.connect("message.db")
+    cur = con.cursor()
+    cur.execute(f"""SELECT msg_id, trade_id FROM messages WHERE u_id={u_id}""")
+    data = cur.fetchall()
+    con.close()
+    return data
+
+
 
 def select_trades_from_database(type):
     con = sqlite3.connect("message.db")
@@ -164,42 +173,28 @@ async def check_trades(dp):
                 text = edited_message_text(tradeDetail['kftrade'])
                 f = False
                 if tradeDetail['kftrade']['agent']:
-                    text = text + \
-                           """
-                           
-                           UPDATE:
-                           
-                           Сделку взял другой оператор!
-                           
-                           """
                     f = True
                 elif tradeDetail['kftrade']['status'] == 'closed' or tradeDetail['kftrade'][
                     'status'] == 'time_cancel':
-                    text = text + \
-                           """
-                           
-                           UPDATE:
-                           
-                           Время сделки истекло!
-                           
-                           """
                     f = True
                 if f:
                     for userId, msgId in data:
                         try:
                             if str(tradeDetail['kftrade']['agent']) != str(userId):
                                 await bot.delete_message(chat_id=userId, message_id=msgId)
-                            delete_from_database(userId, msgId, trade, 'kf')
                         except Exception as e:
                             print(e)
                             continue
+                        finally:
+                            delete_from_database(userId, msgId, trade, 'kf')
+
         req_kftrades = requests.get(URL_DJANGO + 'get/free/kftrades/')
         kf_trades = req_kftrades.json()
 
         for trade in kf_trades:
             time_add_kf = datetime.strptime(trade['date_create'].split('.')[0], "%Y-%m-%dT%H:%M:%S").timestamp()
             time_now = datetime.now().timestamp()
-            if time_now - time_add_kf > 900:
+            if time_now - time_add_kf > 3600:
                 data = {
                     'id': trade['id'],
                     'status': 'time_cancel',
@@ -257,11 +252,6 @@ async def check_trades(dp):
                     else:
                         pass
         await asyncio.sleep(1)
-
-        # except Exception as e:
-        #     print('3', type(e), ' ', e)
-        #     continue
-
 
 async def on_startup(dispatcher):
     await set_default_commands(dispatcher)

@@ -503,16 +503,17 @@ async def accept_cancel(call: types.CallbackQuery, callback_data=dict, state=FSM
     await call.message.edit_text(f'''Вы уверены что хотите отменить сделку?''',
                                  reply_markup=create_yes_no_kb(callback_data['id'], callback_data['type']),
                                  parse_mode='Markdown')
+    await Activity.acceptPayment()
 
 
-@dp.callback_query_handler(trade_cb.filter(action=['other_reason']))
+@dp.callback_query_handler(trade_cb.filter(action=['other_reason']), state=Activity.acceptPayment)
 async def other_case_cancel(call: types.CallbackQuery, callback_data=dict, state=FSMContext):
     await call.message.edit_text(f'''Укажите причину отмены сделки''', parse_mode='Markdown')
     await state.update_data(id=callback_data['id'], type=callback_data['type'])
     await Activity.add_reason_cancel.set()
 
 
-@dp.callback_query_handler(trade_cb.filter(action=['no_balance']))
+@dp.callback_query_handler(trade_cb.filter(action=['no_balance']), state=Activity.acceptPayment)
 async def no_balance_cancel(call: types.CallbackQuery, callback_data=dict, state=FSMContext):
     id = callback_data['id']
     body = {
@@ -610,7 +611,6 @@ async def other_case_cancel(message: types.Message, state=FSMContext):
 
 @dp.message_handler(content_types=['photo', 'document'], state=Activity.acceptPayment)
 async def get_photo(message: types.Message, state=FSMContext):
-    print('12345678')
     data = await state.get_data()
     id = data['id']
     msg_id = data['message_id']

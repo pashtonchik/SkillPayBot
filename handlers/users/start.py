@@ -493,7 +493,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
 
 
 
-@dp.callback_query_handler(trade_cb.filter(action=['cancel_payment']), state=Activity.acceptPayment)
+@dp.callback_query_handler(trade_cb.filter(action=['cancel_payment']))
 async def accept_cancel(call: types.CallbackQuery, callback_data=dict, state=FSMContext):
     print(1111, callback_data)
     await call.message.edit_text(f'''Вы уверены что хотите отменить сделку?''',

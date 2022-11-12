@@ -370,7 +370,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
     print(callback_data)
     trade_id = callback_data['id']
     kb_accept_cancel_payment = create_accept_cancel_kb(trade_id, callback_data['type'])
-    
+    print(kb_accept_cancel_payment)
     if callback_data['type'] == 'BZ':
         url_type = 'trade'
         trade_type = 'trade'
@@ -390,7 +390,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
         trade_type = 'gar_trade'
 
     if (url_type in ['gar', 'pay', 'kf']):
-        
+        print(1111)
         get_pay_info = requests.get(URL_DJANGO + f'{url_type}/trade/detail/{trade_id}/')
 
         if (not get_pay_info.json()[trade_type]['agent'] or str(get_pay_info.json()[trade_type]['agent']) == str(

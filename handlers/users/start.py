@@ -436,7 +436,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
                     elif (url_type == 'pay'):
                         type = 'googleSheets'
                     await state.update_data(id=callback_data['id'], type=type, message_id=msg.message_id)
-
+                    print(22222)
                     await Activity.acceptPayment.set()
                 except Exception as e:
                     print(e)

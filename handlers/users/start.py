@@ -294,7 +294,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
                     await call.message.edit_text(f'''
 
 Заявка: {url_type.upper()} — {trade_id}
-Инструмент: {get_current_info.json()[trade_type]['paymethod_description']}
+Инструмент: {get_current_info.json()['paymethod_description']}
 Сумма: `{get_current_info.json()[trade_type]['amount']}` 
 Адресат: `{get_current_info.json()[trade_type]['card_number']}`
 

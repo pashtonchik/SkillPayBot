@@ -412,9 +412,9 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
                         req = requests.post(URL_DJANGO + f'delete/{url_type}/recipient/', json=res_delete)
                     except Exception as e:
                         print(e)
-                    await call.message.edit_text(f'''
+                    msg = await call.message.edit_text(f'''
 
-Заявка: {url_type.upper()} — {trade_id}
+Заявка: {get_current_info.json()[trade_type]['platform_id']}
 Инструмент: {get_current_info.json()[trade_type]['paymethod_description']}
 Сумма: `{get_current_info.json()[trade_type]['amount']}` 
 Адресат: `{get_current_info.json()[trade_type]['card_number']}`
@@ -422,6 +422,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
 Статус: *Ожидаем оплату и предоставление чека.*
 
     ''', reply_markup=kb_accept_cancel_payment, parse_mode='Markdown')
+                    await state.update_data(message_id=msg.message_id)
                     await Activity.acceptPayment.set()
                 except Exception as e:
                     await call.answer('Произошла ошибка, нажмите кнопку заново.')
@@ -675,7 +676,7 @@ async def get_photo(message: types.Message, state=FSMContext):
             if upload.status_code == 200:
                 await bot.delete_message(chat_id=message.from_user.id, message_id=msg_id)
                 msg = await message.reply(text=f'''
-Заявка: KF — {id}
+Заявка: {get_current_info.json()['kftrade']['platform_id']}
 Инструмент: {get_current_info.json()['kftrade']['type']}
 Сумма: `{get_current_info.json()['kftrade']['amount']}` 
 Адресат: `{get_current_info.json()['kftrade']['card_number']}`
@@ -742,7 +743,7 @@ async def get_photo(message: types.Message, state=FSMContext):
                 if message_request.status_code == 201:
                     await bot.delete_message(chat_id=message.from_user.id, message_id=msg_id)
                     msg = await message.reply(text=f'''
-Заявка: GR — {id}
+Заявка: GAR — {id}
 Инструмент: {trade_detail['gar_trade']['paymethod']}
 Сумма: `{trade_detail['gar_trade']['currency_amount']}` 
 Адресат: `{trade_detail['gar_trade']['details']}`
@@ -759,7 +760,7 @@ async def get_photo(message: types.Message, state=FSMContext):
                                 if change_status_agent.status_code == 200:
                                     await bot.edit_message_text(chat_id=message.from_user.id, message_id=msg.message_id,
                                                                 text=f'''
-Заявка: GR — {id}
+Заявка: GAR — {id}
 Инструмент: {trade_detail['gar_trade']['paymethod']}
 Сумма: `{trade_detail['gar_trade']['currency_amount']}` 
 Адресат: `{trade_detail['gar_trade']['details']}`

@@ -419,6 +419,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
                         req = requests.post(URL_DJANGO + f'delete/{url_type}/recipient/', json=res_delete)
                     except Exception as e:
                         print(e)
+                    print(get_current_info.json()[trade_type])
                     msg = await call.message.edit_text(f'''
 
 Заявка: {get_current_info.json()[trade_type]['platform_id']}

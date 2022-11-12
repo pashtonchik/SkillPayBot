@@ -230,6 +230,7 @@ async def start_job(call: types.CallbackQuery):
 async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSMContext):
 
     trade_id = callback_data['id']
+    await state.update_data(id=callback_data['id'], type=callback_data['type'])
     data = {
         'id': str(trade_id),
         'agent': str(call.from_user.id)
@@ -361,6 +362,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
 async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSMContext):
     trade_id = callback_data['id']
     kb_accept_cancel_payment = create_accept_cancel_kb(trade_id, callback_data['type'])
+    await state.update_data(id=callback_data['id'], type=callback_data['type'])
     
     if callback_data['type'] == 'BZ':
         url_type = 'trade'

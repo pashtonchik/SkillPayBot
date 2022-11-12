@@ -367,6 +367,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
 
 @dp.callback_query_handler(trade_cb.filter(action=['back_to_trade']))
 async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSMContext):
+    print(callback_data)
     trade_id = callback_data['id']
     kb_accept_cancel_payment = create_accept_cancel_kb(trade_id, callback_data['type'])
     

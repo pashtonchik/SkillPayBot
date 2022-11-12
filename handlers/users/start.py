@@ -574,6 +574,14 @@ async def other_case_cancel(message: types.Message, state=FSMContext):
     state_data = await state.get_data()
     id = state_data['id']
     reason = message.text
+    body = {
+        'tg_id': message.from_user.id,
+        'options': {
+            'is_working_now': False,
+            'is_instead': True,
+        }
+    }
+    change_status_agent = requests.post(URL_DJANGO + 'edit_agent_status/', json=body)
     state_data = await state.get_data()
     if state_data['type'] == 'garantex':
         gar_trade_info = requests.get(URL_DJANGO + f'gar/trade/detail/{str(id)}/').json()

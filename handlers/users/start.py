@@ -438,6 +438,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
 
                     await Activity.acceptPayment.set()
                 except Exception as e:
+                    print(e)
                     await call.answer('Произошла ошибка, нажмите кнопку заново.')
 
             else:

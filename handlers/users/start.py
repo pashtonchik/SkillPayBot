@@ -236,7 +236,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
         'agent': str(call.from_user.id)
     }
     kb_accept_cancel_payment = create_accept_cancel_kb(trade_id, callback_data['type'])
-    
+    print(kb_accept_cancel_payment)
     
     if callback_data['type'] == 'BZ':
         url_type = 'trade'

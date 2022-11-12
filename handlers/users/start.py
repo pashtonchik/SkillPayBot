@@ -294,7 +294,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
                     print(get_current_info.json()[trade_type])
                     await call.message.edit_text(f'''
 
-Заявка: {url_type.upper()} — {trade_id}
+Заявка: {get_current_info.json()[trade_type]['platform_id']}
 Инструмент: {get_current_info.json()['paymethod_description']}
 Сумма: `{get_current_info.json()[trade_type]['amount']}` 
 Адресат: `{get_current_info.json()[trade_type]['card_number']}`
@@ -365,7 +365,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
             await call.message.delete()
 
 
-@dp.callback_query_handler(trade_cb.filter(action=['back_to_trade']))
+@dp.callback_query_handler(trade_cb.filter(action=['back_to_trade']), state=Activity.acceptPayment)
 async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSMContext):
     print(callback_data)
     trade_id = callback_data['id']
@@ -496,7 +496,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
 
 
 
-@dp.callback_query_handler(trade_cb.filter(action=['cancel_payment']))
+@dp.callback_query_handler(trade_cb.filter(action=['cancel_payment']), state=Activity.acceptPayment)
 async def accept_cancel(call: types.CallbackQuery, callback_data=dict, state=FSMContext):
     print(1111, callback_data)
     await call.message.edit_text(f'''Вы уверены что хотите отменить сделку?''',
@@ -711,7 +711,7 @@ async def get_photo(message: types.Message, state=FSMContext):
                                 # await bot.delete_message(chat_id=message.from_user.id, message_id=msg.message_id)
                                 await bot.edit_message_text(chat_id=message.from_user.id, message_id=msg.message_id,
                                                             text=f'''
-Заявка: KF — {id}
+Заявка: {get_current_info.json()['kftrade']['platform_id']}
 Инструмент: {get_current_info.json()['kftrade']['type']}
 Сумма: `{get_current_info.json()['kftrade']['amount']}` 
 Адресат: `{get_current_info.json()['kftrade']['card_number']}`

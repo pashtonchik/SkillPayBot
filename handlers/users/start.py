@@ -288,6 +288,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
                     except Exception as e:
                         print(e)
                     await call.answer('Вы успешно взяли заявку в работу!', show_alert=True)
+                    print(1111111111)
                     await call.message.edit_text(f'''
 
 Заявка: {url_type.upper()} — {trade_id}

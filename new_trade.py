@@ -1,6 +1,6 @@
 import requests
 
-URL_DJANGO = 'http://194.58.92.160:8000/api/'
+URL_DJANGO = 'http://194.58.92.160:8001/api/'
 
 
 trade_info = {
@@ -18,5 +18,10 @@ trade_info = {
 
 
 a = requests.post(URL_DJANGO + 'create/kf/trade/', json=trade_info)
+# res_delete = {
+#                 'id' : [1,2,3],
+#                 'tg_id' : 1893883161
+#             }
 
-print(a)
+# req = requests.post(URL_DJANGO + 'delete/kf/recipient/', json=res_delete)
+# print(req.status_code)

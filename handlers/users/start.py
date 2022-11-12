@@ -45,11 +45,6 @@ def create_accept_cancel_kb(trade_id, trade_type):
     kb_accept_payment = InlineKeyboardMarkup(
         inline_keyboard=[
             [
-                InlineKeyboardButton(text='Оплатил',
-                                     callback_data=trade_cb.new(id=trade_id, type=trade_type,
-                                                                action='accept_payment'))
-            ],
-            [
                 InlineKeyboardButton(text='Отменить сделку',
                                      callback_data=trade_cb.new(id=trade_id, type=trade_type,
                                                                 action='cancel_payment'))
@@ -165,7 +160,7 @@ async def start_job(call: types.CallbackQuery):
 
     messages = select_message_from_database(call.from_user.id)
     trade_mas = []
-    for msg, trade_id_db,   in messages:
+    for msg, trade_id_db, in messages:
         trade_mas.append(trade_id_db)
         try:
             await bot.delete_message(call.from_user.id, msg)
@@ -243,88 +238,36 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
     
     
     if callback_data['type'] == 'BZ':
-        get_trade_info = requests.get(URL_DJANGO + f'trade/detail/{trade_id}/')
-        if not get_trade_info.json()['trade']['agent'] or str(get_trade_info.json()['trade']['agent']) == str(
-                call.from_user.id):
-
-            set_agent_trade = requests.post(URL_DJANGO + f'update/trade/', json=data)
-
-            get_current_info = requests.get(URL_DJANGO + f'trade/detail/{trade_id}/')
-            if get_current_info.json()['trade']['agent'] == str(call.from_user.id):
-                headers = authorization(
-                    get_current_info.json()['user']['key'],
-                    get_current_info.json()['user']['email']
-                )
-
-                proxy = get_current_info.json()['user']['proxy']
-
-                data = {
-                    'type': 'confirm-trade'
-                }
-
-                url = f'https://bitzlato.com/api/p2p/trade/{trade_id}/'
-                try:
-                    req_change_type = requests.post(url, headers=headers, proxies=proxy, json=data)
-
-                    if req_change_type.status_code == 200:
-                        await call.answer('Вы успешно взяли заявку в работу!', show_alert=True)
-                        await call.message.edit_text(f'''
-Переведите {get_current_info.json()['trade']['currency_amount']} {get_current_info.json()['trade']['currency']}
-Комментарий: {get_current_info.json()['trade']['details']}
-Реквизиты: {get_current_info.json()['trade']['counterDetails']} {get_current_info.json()['paymethod_description']}
-                                                        ''', reply_markup=kb_accept_cancel_payment)
-                        await Activity.acceptOrder.set()
-                    else:
-                        await call.answer('Произошла ошибка, нажмите кнопку заново.')
-                except Exception as e:
-                    await call.answer('Произошла ошибка, нажмите кнопку заново.')
-
-            else:
-                await call.answer("Заявка уже в работе", show_alert=True)
-                await call.message.delete()
-        else:
-            await call.answer("Заявка уже в работе", show_alert=True)
-            await call.message.delete()
+        url_type = 'trade'
+        trade_type = 'trade'
+    
     elif callback_data['type'] == 'googleSheets':
-        get_pay_info = requests.get(URL_DJANGO + f'pay/detail/{trade_id}/')
-        if not get_pay_info.json()['pay']['agent'] or str(get_pay_info.json()['pay']['agent']) == str(
-                call.from_user.id):
-
-            set_agent_trade = requests.post(URL_DJANGO + f'update/pay/', json=data)
-
-            get_current_info = requests.get(URL_DJANGO + f'pay/detail/{trade_id}/')
-
-            if str(get_current_info.json()['pay']['agent']) == str(call.from_user.id):
-                try:
-                    await call.answer('Вы успешно взяли заявку в работу!', show_alert=True)
-                    await call.message.edit_text(f'''
-Переведите {get_current_info.json()['pay']['amount']} RUB
-Реквизиты: {get_current_info.json()['pay']['card_number']} {get_current_info.json()['paymethod_description']}
-            ''', reply_markup=kb_accept_cancel_payment)
-                    await Activity.acceptOrder.set()
-                except Exception as e:
-                    await call.answer('Произошла ошибка, нажмите кнопку заново.')
-
-            else:
-                await call.answer("Заявка уже в работе", show_alert=True)
-                await call.message.delete()
-
-        else:
-            await call.answer('Заявка уже в работе.', show_alert=True)
-            await call.message.delete()
+        url_type = 'pay'
+        trade_type = 'pay'
 
     elif callback_data['type'] == 'kf':
-        get_pay_info = requests.get(URL_DJANGO + f'kf/trade/detail/{trade_id}/')
+        url_type = 'kf'
+        trade_type = 'kftrade'
+        
+    # _______________GAANTEX__________________________GATANTEX________________________GATANTEX________________________
+    elif callback_data['type'] == 'garantex':
+        url_type = 'gar'
+        trade_type = 'gar_trade'
 
-        if (not get_pay_info.json()['kftrade']['agent'] or str(get_pay_info.json()['kftrade']['agent']) == str(
+
+    if (url_type in ['gar', 'pay', 'kf']):
+        
+        get_pay_info = requests.get(URL_DJANGO + f'{url_type}/trade/detail/{trade_id}/')
+
+        if (not get_pay_info.json()[trade_type]['agent'] or str(get_pay_info.json()[trade_type]['agent']) == str(
                 call.from_user.id)) and \
-                get_pay_info.json()['kftrade']['status'] != 'closed':
+                get_pay_info.json()[trade_type]['status'] != 'closed':
 
-            set_agent_trade = requests.post(URL_DJANGO + f'update/kf/trade/', json=data)
+            set_agent_trade = requests.post(URL_DJANGO + f'update/{url_type}/trade/', json=data)
 
-            get_current_info = requests.get(URL_DJANGO + f'kf/trade/detail/{trade_id}/')
+            get_current_info = requests.get(URL_DJANGO + f'{url_type}/trade/detail/{trade_id}/')
 
-            if str(get_current_info.json()['kftrade']['agent']) == str(call.from_user.id):
+            if str(get_current_info.json()[trade_type]['agent']) == str(call.from_user.id):
                 try:
                     messages = select_message_from_database(call.from_user.id)
                     trade_mas = []
@@ -335,23 +278,27 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
                                 await bot.delete_message(call.from_user.id, msg)
                             except Exception as e:
                                 print(e)
-                            delete_from_database(call.from_user.id, msg, trade_id_db, 'kf')
+                            delete_from_database(call.from_user.id, msg, trade_id_db, url_type)
                     res_delete = {
                                 'id' : trade_mas,
                                 'tg_id' : call.from_user.id
                             }
                     try:
-                        req = requests.post(URL_DJANGO + 'delete/kf/recipient/', json=res_delete)
+                        req = requests.post(URL_DJANGO + f'delete/{url_type}/recipient/', json=res_delete)
                     except Exception as e:
                         print(e)
                     await call.answer('Вы успешно взяли заявку в работу!', show_alert=True)
                     await call.message.edit_text(f'''
-Заявка: KF — {trade_id}
-Инструмент: {get_current_info.json()['kftrade']['type']}
-Сумма: `{get_current_info.json()['kftrade']['amount']}` 
-Адресат: `{get_current_info.json()['kftrade']['card_number']}`
-            ''', reply_markup=kb_accept_cancel_payment, parse_mode='Markdown')
-                    await Activity.acceptOrder.set()
+
+Заявка: {url_type.upper()} — {trade_id}
+Инструмент: {get_current_info.json()[trade_type]['paymethod_description']}
+Сумма: `{get_current_info.json()[trade_type]['amount']}` 
+Адресат: `{get_current_info.json()[trade_type]['card_number']}`
+
+Статус: *Ожидаем оплату и предоставление чека.*
+
+    ''', reply_markup=kb_accept_cancel_payment, parse_mode='Markdown')
+                    await Activity.acceptPayment.set()
                 except Exception as e:
                     await call.answer('Произошла ошибка, нажмите кнопку заново.')
 
@@ -361,43 +308,8 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
         else:
             await call.answer('Заявка уже в работе.', show_alert=True)
             await call.message.delete()
-
-
-    # _______________GAANTEX__________________________GATANTEX________________________GATANTEX________________________
-    elif callback_data['type'] == 'garantex':
-        get_trade_info = requests.get(URL_DJANGO + f'gar/trade/detail/{trade_id}/')
-        if not get_trade_info.json()['gar_trade']['agent'] or str(get_trade_info.json()['gar_trade']['agent']) == str(
-                call.from_user.id):
-
-            data = {
-                'id': str(trade_id),
-                'agent': str(call.from_user.id),
-            }
-            set_agent_trade = requests.post(URL_DJANGO + f'update/garantex/trade/', json=data)
-
-            get_current_info = requests.get(URL_DJANGO + f'gar/trade/detail/{trade_id}/')
-
-            await call.answer('Вы успешно взяли заявку в работу!', show_alert=True)
-            await call.message.edit_text(f'''
-Переведите {get_current_info.json()['gar_trade']['currency_amount']} {get_current_info.json()['gar_trade']['currency']}
-Реквизиты: {get_current_info.json()['gar_trade']['details']} {get_current_info.json()['paymethod_description']}
-                                                        ''', reply_markup=kb_accept_cancel_payment)
-            await Activity.acceptOrder.set()
-        else:
-            await call.answer("Заявка уже в работе", show_alert=True)
-            await call.message.delete()
-
-
-
-@dp.callback_query_handler(trade_cb.filter(action=['back_to_trade']))
-async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSMContext):
-    trade_id = callback_data['id']
-    data = {
-        'id': str(trade_id),
-        'agent': str(call.from_user.id)
-    }
-    kb_accept_cancel_payment = create_accept_cancel_kb(trade_id, callback_data['type'])
-    if callback_data['type'] == 'BZ':
+    
+    else:
         get_trade_info = requests.get(URL_DJANGO + f'trade/detail/{trade_id}/')
         if not get_trade_info.json()['trade']['agent'] or str(get_trade_info.json()['trade']['agent']) == str(
                 call.from_user.id):
@@ -428,7 +340,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
 Комментарий: {get_current_info.json()['trade']['details']}
 Реквизиты: {get_current_info.json()['trade']['counterDetails']} {get_current_info.json()['paymethod_description']}
                                                         ''', reply_markup=kb_accept_cancel_payment)
-                        await Activity.acceptOrder.set()
+                        await Activity.acceptPayment.set()
                     else:
                         await call.answer('Произошла ошибка, нажмите кнопку заново.')
                 except Exception as e:
@@ -440,80 +352,127 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
         else:
             await call.answer("Заявка уже в работе", show_alert=True)
             await call.message.delete()
+
+
+@dp.callback_query_handler(trade_cb.filter(action=['back_to_trade']))
+async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSMContext):
+    trade_id = callback_data['id']
+    kb_accept_cancel_payment = create_accept_cancel_kb(trade_id, callback_data['type'])
+    
+    if callback_data['type'] == 'BZ':
+        url_type = 'trade'
+        trade_type = 'trade'
+    
     elif callback_data['type'] == 'googleSheets':
-        get_pay_info = requests.get(URL_DJANGO + f'pay/detail/{trade_id}/')
-        if not get_pay_info.json()['pay']['agent'] or str(get_pay_info.json()['pay']['agent']) == str(
-                call.from_user.id):
+        url_type = 'pay'
+        trade_type = 'pay'
 
-            set_agent_trade = requests.post(URL_DJANGO + f'update/pay/', json=data)
+    elif callback_data['type'] == 'kf':
+        url_type = 'kf'
+        trade_type = 'kftrade'
 
-            get_current_info = requests.get(URL_DJANGO + f'pay/detail/{trade_id}/')
 
+    # _______________GAANTEX__________________________GATANTEX________________________GATANTEX________________________
+    elif callback_data['type'] == 'garantex':
+        url_type = 'gar'
+        trade_type = 'gar_trade'
 
-            if str(get_current_info.json()['pay']['agent']) == str(call.from_user.id):
+    if (url_type in ['gar', 'pay', 'kf']):
+        
+        get_pay_info = requests.get(URL_DJANGO + f'{url_type}/trade/detail/{trade_id}/')
+
+        if (not get_pay_info.json()[trade_type]['agent'] or str(get_pay_info.json()[trade_type]['agent']) == str(
+                call.from_user.id)) and \
+                get_pay_info.json()[trade_type]['status'] != 'closed':
+
+            get_current_info = requests.get(URL_DJANGO + f'{url_type}/trade/detail/{trade_id}/')
+
+            if str(get_current_info.json()[trade_type]['agent']) == str(call.from_user.id):
                 try:
-                    await call.answer('Вы успешно взяли заявку в работу!', show_alert=True)
+                    messages = select_message_from_database(call.from_user.id)
+                    trade_mas = []
+                    for msg, trade_id_db,   in messages:
+                        if (msg != call.message.message_id):
+                            trade_mas.append(trade_id_db)
+                            try:
+                                await bot.delete_message(call.from_user.id, msg)
+                            except Exception as e:
+                                print(e)
+                            delete_from_database(call.from_user.id, msg, trade_id_db, url_type)
+                    res_delete = {
+                                'id' : trade_mas,
+                                'tg_id' : call.from_user.id
+                            }
+                    try:
+                        req = requests.post(URL_DJANGO + f'delete/{url_type}/recipient/', json=res_delete)
+                    except Exception as e:
+                        print(e)
                     await call.message.edit_text(f'''
-Переведите {get_current_info.json()['pay']['amount']} RUB
-Реквизиты: {get_current_info.json()['pay']['card_number']} {get_current_info.json()['paymethod_description']}
-            ''', reply_markup=kb_accept_cancel_payment)
-                    await Activity.acceptOrder.set()
+
+Заявка: {url_type.upper()} — {trade_id}
+Инструмент: {get_current_info.json()[trade_type]['paymethod_description']}
+Сумма: `{get_current_info.json()[trade_type]['amount']}` 
+Адресат: `{get_current_info.json()[trade_type]['card_number']}`
+
+Статус: *Ожидаем оплату и предоставление чека.*
+
+    ''', reply_markup=kb_accept_cancel_payment, parse_mode='Markdown')
+                    await Activity.acceptPayment.set()
                 except Exception as e:
                     await call.answer('Произошла ошибка, нажмите кнопку заново.')
 
             else:
                 await call.answer("Заявка уже в работе", show_alert=True)
                 await call.message.delete()
-
         else:
             await call.answer('Заявка уже в работе.', show_alert=True)
             await call.message.delete()
-
-    elif callback_data['type'] == 'kf':
-        get_pay_info = requests.get(URL_DJANGO + f'kf/trade/detail/{trade_id}/')
-
-        if (not get_pay_info.json()['kftrade']['agent'] or str(get_pay_info.json()['kftrade']['agent']) == str(
-                call.from_user.id)) and \
-                get_pay_info.json()['kftrade']['status'] != 'closed':
-
-
-            get_current_info = requests.get(URL_DJANGO + f'kf/trade/detail/{trade_id}/')
-
-            await call.message.edit_text(f'''
-Заявка: KF — {trade_id}
-Инструмент: {get_current_info.json()['kftrade']['type']}
-Сумма: `{get_current_info.json()['kftrade']['amount']}` 
-Адресат: `{get_current_info.json()['kftrade']['card_number']}`
-            ''', reply_markup=kb_accept_cancel_payment, parse_mode='Markdown')
-            await Activity.acceptOrder.set()
-
-        else:
-            await call.answer('Заявка уже в работе.', show_alert=True)
-            await call.message.delete()
-
-    # _______________GAANTEX__________________________GATANTEX________________________GATANTEX________________________
-    elif callback_data['type'] == 'garantex':
-        get_trade_info = requests.get(URL_DJANGO + f'gar/trade/detail/{trade_id}/')
-        if not get_trade_info.json()['gar_trade']['agent'] or str(get_trade_info.json()['gar_trade']['agent']) == str(
+    
+    else:
+        get_trade_info = requests.get(URL_DJANGO + f'trade/detail/{trade_id}/')
+        if not get_trade_info.json()['trade']['agent'] or str(get_trade_info.json()['trade']['agent']) == str(
                 call.from_user.id):
 
-            data = {
-                'id': str(trade_id),
-                'agent': str(call.from_user.id),
-            }
-            set_agent_trade = requests.post(URL_DJANGO + f'update/garantex/trade/', json=data)
+            set_agent_trade = requests.post(URL_DJANGO + f'update/trade/', json=data)
 
-            get_current_info = requests.get(URL_DJANGO + f'gar/trade/detail/{trade_id}/')
+            get_current_info = requests.get(URL_DJANGO + f'trade/detail/{trade_id}/')
+            if get_current_info.json()['trade']['agent'] == str(call.from_user.id):
+                headers = authorization(
+                    get_current_info.json()['user']['key'],
+                    get_current_info.json()['user']['email']
+                )
 
-            await call.answer('Вы успешно взяли заявку в работу!', show_alert=True)
-            await call.message.edit_text(f'''
-Переведите {get_current_info.json()['gar_trade']['currency_amount']} {get_current_info.json()['gar_trade']['currency']}
-Реквизиты: {get_current_info.json()['gar_trade']['details']} {get_current_info.json()['paymethod_description']}
+                proxy = get_current_info.json()['user']['proxy']
+
+                data = {
+                    'type': 'confirm-trade'
+                }
+
+                url = f'https://bitzlato.com/api/p2p/trade/{trade_id}/'
+                try:
+                    req_change_type = requests.post(url, headers=headers, proxies=proxy, json=data)
+
+                    if req_change_type.status_code == 200:
+                        await call.answer('Вы успешно взяли заявку в работу!', show_alert=True)
+                        await call.message.edit_text(f'''
+Переведите {get_current_info.json()['trade']['currency_amount']} {get_current_info.json()['trade']['currency']}
+Комментарий: {get_current_info.json()['trade']['details']}
+Реквизиты: {get_current_info.json()['trade']['counterDetails']} {get_current_info.json()['paymethod_description']}
                                                         ''', reply_markup=kb_accept_cancel_payment)
-            await Activity.acceptOrder.set()
+                        await Activity.acceptPayment.set()
+                    else:
+                        await call.answer('Произошла ошибка, нажмите кнопку заново.')
+                except Exception as e:
+                    await call.answer('Произошла ошибка, нажмите кнопку заново.')
+
+            else:
+                await call.answer("Заявка уже в работе", show_alert=True)
+                await call.message.delete()
         else:
             await call.answer("Заявка уже в работе", show_alert=True)
             await call.message.delete()
+
+
 
 @dp.callback_query_handler(trade_cb.filter(action=['cancel_payment']), state=Activity.acceptOrder)
 async def accept_cancel(call: types.CallbackQuery, callback_data=dict, state=FSMContext):
@@ -624,68 +583,6 @@ async def other_case_cancel(message: types.Message, state=FSMContext):
             ''', parse_mode='Markdown')
     await state.finish()
 
-
-@dp.callback_query_handler(trade_cb.filter(action=['accept_payment']), state=Activity.acceptOrder)
-async def accept_payment(call: types.CallbackQuery, callback_data=dict, state=FSMContext):
-    id = str(callback_data['id'])
-    if callback_data['type'] == 'BZ':
-
-        get_current_info = requests.get(URL_DJANGO + f'trade/detail/{id}/')
-
-        headers = authorization(get_current_info.json()['user']['key'], get_current_info.json()['user']['email'])
-
-        proxy = get_current_info.json()['user']['proxy']
-
-        data = {
-            'type': 'payment'
-        }
-
-        url = f'https://bitzlato.bz/api/p2p/trade/{id}/'
-        try:
-
-            req_change_type = requests.post(url, headers=headers, proxies=proxy, json=data)
-
-            if req_change_type.status_code == 200:
-                await call.message.answer('Пришлите чек о переводе в виде изображения.')
-                await state.update_data(id=id, type='BZ')
-                await Activity.acceptPayment.set()
-            else:
-                await call.message.answer('Произошла ошибка, нажмите кнопку заново.')
-        except Exception as e:
-            await call.message.answer('Произошла ошибка, нажмите кнопку заново.')
-    elif callback_data['type'] == 'googleSheets':
-        get_current_info = requests.get(URL_DJANGO + f'pay/detail/{id}/')
-        await call.message.answer('Пришлите чек о переводе в виде изображения.')
-        await state.update_data(id=id, type='googleSheets')
-        await Activity.acceptPayment.set()
-    elif callback_data['type'] == 'kf':
-        get_current_info = requests.get(URL_DJANGO + f'kf/trade/detail/{id}/')
-        msg = await call.message.edit_text(f'''
-Заявка: KF — {id}
-Инструмент: {get_current_info.json()['kftrade']['type']}
-Сумма: `{get_current_info.json()['kftrade']['amount']}` 
-Адресат: `{get_current_info.json()['kftrade']['card_number']}`
-
-Статус: *Пришлите чек о переводе!*
-
-            ''', parse_mode='Markdown')
-
-        await state.update_data(id=id, type='kf', message_id=msg.message_id)
-        await Activity.acceptPayment.set()
-    # _______________GATANTEX__________________________GATANTEX________________________GATANTEX________________________
-    elif callback_data['type'] == 'garantex':
-        get_current_info = requests.get(URL_DJANGO + f'gar/trade/detail/{id}/')
-        msg = await call.message.edit_text(f'''
-Заявка: Garantex — {id}
-Инструмент: {get_current_info.json()['gar_trade']['paymethod']}
-Сумма: `{get_current_info.json()['gar_trade']['currency_amount']}` 
-Адресат: `{get_current_info.json()['gar_trade']['details']}`
-
-Статус: *Пришлите чек о переводе!*
-
-                    ''', parse_mode='Markdown')
-        await state.update_data(id=id, type='garantex', message_id=msg.message_id)
-        await Activity.acceptPayment.set()
 
 
 @dp.message_handler(content_types=['photo', 'document'], state=Activity.acceptPayment)

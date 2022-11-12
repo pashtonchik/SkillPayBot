@@ -309,6 +309,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
                     elif (url_type == 'pay'):
                         type = 'googleSheets'
                     await state.update_data(id=callback_data['id'], type=type, message_id=msg.message_id)
+                    print(type)
                     await Activity.acceptPayment.set()
                 except Exception as e:
                     await call.answer('Произошла ошибка, нажмите кнопку заново.')
@@ -609,8 +610,8 @@ async def other_case_cancel(message: types.Message, state=FSMContext):
 
 @dp.message_handler(content_types=['photo', 'document'], state=Activity.acceptPayment)
 async def get_photo(message: types.Message, state=FSMContext):
-    data = await state.get_data()
     print('12345678')
+    data = await state.get_data()
     id = data['id']
     msg_id = data['message_id']
     body = {

@@ -230,7 +230,7 @@ async def start_job(call: types.CallbackQuery):
 async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSMContext):
 
     trade_id = callback_data['id']
-    await state.update_data(id=callback_data['id'], type=callback_data['type'])
+
     data = {
         'id': str(trade_id),
         'agent': str(call.from_user.id)
@@ -302,6 +302,13 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
 Статус: *Ожидаем оплату и предоставление чека.*
 
     ''', reply_markup=kb_accept_cancel_payment, parse_mode='Markdown')
+                    if (url_type == 'kf'):
+                        type = 'kf'
+                    elif (url_type == 'gar'):
+                        type = 'garantex'
+                    elif (url_type == 'pay'):
+                        type = 'googleSheets'
+                    await state.update_data(id=callback_data['id'], type=type, message_id=msg.message_id)
                     await Activity.acceptPayment.set()
                 except Exception as e:
                     await call.answer('Произошла ошибка, нажмите кнопку заново.')

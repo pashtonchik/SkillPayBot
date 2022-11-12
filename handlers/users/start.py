@@ -109,7 +109,7 @@ async def confirm_payment(id, message, state):
             await asyncio.sleep(1)
 
         except Exception as e:
-            (e)
+            print(e)
             continue
 
 
@@ -128,15 +128,12 @@ def authorization(key, email_bz):
 
 @dp.message_handler(CommandStart())
 async def bot_start(message: types.Message):
-    ('1')
     body = {
         'tg_id': message.from_user.id
     }
     r = requests.post(URL_DJANGO + 'get_agent_info/', json=body)
-    (r.status_code)
     if r.status_code == 200:
         data = r.json()[0]
-        (data)
         if data['is_instead']:
             status = 'На смене'
         else:
@@ -153,7 +150,6 @@ async def bot_start(message: types.Message):
 
 @dp.callback_query_handler(text='Смена')
 async def job(call: types.CallbackQuery):
-    (call.from_user.id)
     await call.message.edit_text('Выберите действие', reply_markup=kb_menu_job)
 
 
@@ -174,7 +170,7 @@ async def start_job(call: types.CallbackQuery):
         try:
             await bot.delete_message(call.from_user.id, msg)
         except Exception as e:
-            (e)
+            print(e)
         delete_from_database(call.from_user.id, msg, trade_id_db, 'kf')
     res_delete = {
                 'id' : trade_mas,
@@ -182,9 +178,8 @@ async def start_job(call: types.CallbackQuery):
             }
     try:
         req = requests.post(URL_DJANGO + 'delete/kf/recipient/', json=res_delete)
-        (req.status_code)
     except Exception as e:
-        (e)
+        print(e)
     if r.status_code == 200:
         if data['is_instead']:
             body = {
@@ -238,24 +233,23 @@ async def start_job(call: types.CallbackQuery):
 
 @dp.callback_query_handler(trade_cb.filter(action=['accept_trade']))
 async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSMContext):
-    ('accept')
-    (callback_data)
+
     trade_id = callback_data['id']
     data = {
         'id': str(trade_id),
         'agent': str(call.from_user.id)
     }
     kb_accept_cancel_payment = create_accept_cancel_kb(trade_id, callback_data['type'])
+    
+    
     if callback_data['type'] == 'BZ':
         get_trade_info = requests.get(URL_DJANGO + f'trade/detail/{trade_id}/')
-        (get_trade_info.status_code)
         if not get_trade_info.json()['trade']['agent'] or str(get_trade_info.json()['trade']['agent']) == str(
                 call.from_user.id):
 
             set_agent_trade = requests.post(URL_DJANGO + f'update/trade/', json=data)
 
             get_current_info = requests.get(URL_DJANGO + f'trade/detail/{trade_id}/')
-            (get_current_info.status_code)
             if get_current_info.json()['trade']['agent'] == str(call.from_user.id):
                 headers = authorization(
                     get_current_info.json()['user']['key'],
@@ -293,7 +287,6 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
             await call.message.delete()
     elif callback_data['type'] == 'googleSheets':
         get_pay_info = requests.get(URL_DJANGO + f'pay/detail/{trade_id}/')
-        (get_pay_info.status_code)
         if not get_pay_info.json()['pay']['agent'] or str(get_pay_info.json()['pay']['agent']) == str(
                 call.from_user.id):
 
@@ -301,8 +294,6 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
 
             get_current_info = requests.get(URL_DJANGO + f'pay/detail/{trade_id}/')
 
-            (get_current_info.json())
-            (call.from_user.id)
             if str(get_current_info.json()['pay']['agent']) == str(call.from_user.id):
                 try:
                     await call.answer('Вы успешно взяли заявку в работу!', show_alert=True)
@@ -343,7 +334,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
                             try:
                                 await bot.delete_message(call.from_user.id, msg)
                             except Exception as e:
-                                (e)
+                                print(e)
                             delete_from_database(call.from_user.id, msg, trade_id_db, 'kf')
                     res_delete = {
                                 'id' : trade_mas,
@@ -351,9 +342,8 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
                             }
                     try:
                         req = requests.post(URL_DJANGO + 'delete/kf/recipient/', json=res_delete)
-                        (req.status_code)
                     except Exception as e:
-                        (e)
+                        print(e)
                     await call.answer('Вы успешно взяли заявку в работу!', show_alert=True)
                     await call.message.edit_text(f'''
 Заявка: KF — {trade_id}
@@ -401,8 +391,6 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
 
 @dp.callback_query_handler(trade_cb.filter(action=['back_to_trade']))
 async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSMContext):
-    ('accept')
-    (callback_data)
     trade_id = callback_data['id']
     data = {
         'id': str(trade_id),
@@ -411,14 +399,12 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
     kb_accept_cancel_payment = create_accept_cancel_kb(trade_id, callback_data['type'])
     if callback_data['type'] == 'BZ':
         get_trade_info = requests.get(URL_DJANGO + f'trade/detail/{trade_id}/')
-        (get_trade_info.status_code)
         if not get_trade_info.json()['trade']['agent'] or str(get_trade_info.json()['trade']['agent']) == str(
                 call.from_user.id):
 
             set_agent_trade = requests.post(URL_DJANGO + f'update/trade/', json=data)
 
             get_current_info = requests.get(URL_DJANGO + f'trade/detail/{trade_id}/')
-            (get_current_info.status_code)
             if get_current_info.json()['trade']['agent'] == str(call.from_user.id):
                 headers = authorization(
                     get_current_info.json()['user']['key'],
@@ -456,7 +442,6 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
             await call.message.delete()
     elif callback_data['type'] == 'googleSheets':
         get_pay_info = requests.get(URL_DJANGO + f'pay/detail/{trade_id}/')
-        (get_pay_info.status_code)
         if not get_pay_info.json()['pay']['agent'] or str(get_pay_info.json()['pay']['agent']) == str(
                 call.from_user.id):
 
@@ -464,8 +449,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
 
             get_current_info = requests.get(URL_DJANGO + f'pay/detail/{trade_id}/')
 
-            (get_current_info.json())
-            (call.from_user.id)
+
             if str(get_current_info.json()['pay']['agent']) == str(call.from_user.id):
                 try:
                     await call.answer('Вы успешно взяли заявку в работу!', show_alert=True)

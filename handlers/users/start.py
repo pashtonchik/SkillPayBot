@@ -230,7 +230,7 @@ async def start_job(call: types.CallbackQuery):
 async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSMContext):
 
     trade_id = callback_data['id']
-
+    print(callback_data)
     data = {
         'id': str(trade_id),
         'agent': str(call.from_user.id)

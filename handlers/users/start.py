@@ -48,7 +48,7 @@ def create_accept_cancel_kb(trade_id, trade_type):
                 InlineKeyboardButton(text='Отменить сделку',
                                      callback_data=trade_cb.new(id=trade_id, type=trade_type,
                                                                 action='cancel_payment'))
-            ]
+            ],
         ]
     )
     return kb_accept_payment

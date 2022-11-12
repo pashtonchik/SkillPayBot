@@ -289,17 +289,18 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
                         print(e)
                     await call.answer('Вы успешно взяли заявку в работу!', show_alert=True)
                     print(1111111111)
-                    await call.message.edit_text('1111')
-#                     await call.message.edit_text(f'''
+                    # await call.message.edit_text('1111')
+                    print(get_current_info.json()[trade_type])
+                    await call.message.edit_text(f'''
 
-# Заявка: {url_type.upper()} — {trade_id}
-# Инструмент: {get_current_info.json()[trade_type]['paymethod_description']}
-# Сумма: `{get_current_info.json()[trade_type]['amount']}` 
-# Адресат: `{get_current_info.json()[trade_type]['card_number']}`
+Заявка: {url_type.upper()} — {trade_id}
+Инструмент: {get_current_info.json()[trade_type]['paymethod_description']}
+Сумма: `{get_current_info.json()[trade_type]['amount']}` 
+Адресат: `{get_current_info.json()[trade_type]['card_number']}`
 
-# Статус: *Ожидаем оплату и предоставление чека.*
+Статус: *Ожидаем оплату и предоставление чека.*
 
-#     ''', reply_markup=kb_accept_cancel_payment, parse_mode='Markdown')
+    ''', reply_markup=kb_accept_cancel_payment, parse_mode='Markdown')
                     await Activity.acceptPayment.set()
                 except Exception as e:
                     await call.answer('Произошла ошибка, нажмите кнопку заново.')

@@ -308,8 +308,8 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
                         type = 'garantex'
                     elif (url_type == 'pay'):
                         type = 'googleSheets'
-                    await state.update_data(id=trade_id, type=type, message_id=msg.message_id)
                     await Activity.acceptPayment.set()
+                    await state.update_data(id=trade_id, type=type, message_id=msg.message_id)
                 except Exception as e:
                     await call.answer('Произошла ошибка, нажмите кнопку заново.')
 

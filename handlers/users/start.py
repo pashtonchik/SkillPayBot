@@ -277,7 +277,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
                     except Exception as e:
                         print(e)
                     await call.answer('Вы успешно взяли заявку в работу!', show_alert=True)
-                    await call.message.edit_text(f'''
+                    msg = await call.message.edit_text(f'''
 
 Заявка: {get_current_info.json()[trade_type]['platform_id']}
 Инструмент: {get_current_info.json()['paymethod_description']}

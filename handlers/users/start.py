@@ -296,9 +296,11 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
                         type = 'garantex'
                     elif (url_type == 'pay'):
                         type = 'googleSheets'
+                    print(3333333)
                     await state.set_data(id=trade_id, type=type, message_id=msg.message_id)
                     await Activity.acceptPayment.set()
                     print('[DATA]', await state.get_data())
+                    print(11111111)
                     
                 except Exception as e:
                     await call.answer('Произошла ошибка, нажмите кнопку заново.')

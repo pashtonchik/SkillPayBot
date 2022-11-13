@@ -223,6 +223,8 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
         'id': str(trade_id),
         'agent': str(call.from_user.id)
     }
+    await state.update_data(id='', type='12345', message_id='123456')
+    print('[DATA]', await state.get_data())
     kb_accept_cancel_payment = create_accept_cancel_kb(trade_id, callback_data['type'])
     print(kb_accept_cancel_payment)
     
@@ -297,8 +299,6 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
                     elif (url_type == 'pay'):
                         type = 'googleSheets'
                     print(3333333)
-                    await state.set_data(id=trade_id, type=type, message_id=msg.message_id)
-                    print('[DATA]', await state.get_data())
                     await Activity.acceptPayment.set()
                     print(11111111)
                     

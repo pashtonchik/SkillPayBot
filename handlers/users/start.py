@@ -276,7 +276,6 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
                         req = requests.post(URL_DJANGO + f'delete/{url_type}/recipient/', json=res_delete)
                     except Exception as e:
                         print(e)
-                    print(trade_id, type, msg.message_id)
                     await call.answer('Вы успешно взяли заявку в работу!', show_alert=True)
                     await call.message.edit_text(f'''
 
@@ -294,11 +293,13 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
                         type = 'garantex'
                     elif (url_type == 'pay'):
                         type = 'googleSheets'
+                    print(trade_id, type)
                     await state.update_data(id=trade_id, type=type, message_id=msg.message_id)
                     print('[DATA]', await state.get_data())
                     await Activity.acceptPayment.set()
 
                 except Exception as e:
+                    print(e)
                     await call.answer('Произошла ошибка, нажмите кнопку заново.')
 
             else:

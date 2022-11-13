@@ -228,7 +228,8 @@ async def start_job(call: types.CallbackQuery):
 
 @dp.callback_query_handler(trade_cb.filter(action=['accept_trade']))
 async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSMContext):
-
+    data = await state.get_data()
+    print('[DATA]', data)
     trade_id = callback_data['id']
     print(callback_data)
     data = {
@@ -308,8 +309,8 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
                         type = 'garantex'
                     elif (url_type == 'pay'):
                         type = 'googleSheets'
-                    await Activity.acceptPayment.set()
                     await state.update_data(id=trade_id, type=type, message_id=msg.message_id)
+                    await Activity.acceptPayment.set()
                 except Exception as e:
                     await call.answer('Произошла ошибка, нажмите кнопку заново.')
 
@@ -367,6 +368,8 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
 
 @dp.callback_query_handler(trade_cb.filter(action=['back_to_trade']), state=Activity.acceptPayment)
 async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSMContext):
+    data = await state.get_data()
+    print('[DATA]', data)
     print(callback_data)
     trade_id = callback_data['id']
     kb_accept_cancel_payment = create_accept_cancel_kb(trade_id, callback_data['type'])
@@ -496,6 +499,8 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
 
 @dp.callback_query_handler(trade_cb.filter(action=['cancel_payment']), state=Activity.acceptPayment)
 async def accept_cancel(call: types.CallbackQuery, callback_data=dict, state=FSMContext):
+    data = await state.get_data()
+    print('[DATA]', data)
     print(1111, callback_data)
     await call.message.edit_text(f'''Вы уверены что хотите отменить сделку?''',
                                  reply_markup=create_yes_no_kb(callback_data['id'], callback_data['type']),

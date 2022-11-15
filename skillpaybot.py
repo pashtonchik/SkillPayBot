@@ -114,7 +114,7 @@ def create_message_text(trade):
 def edited_message_text(trade):
     messageText = f'''
 Заявка: {trade['platform_id']}
-Инструмент: {trade['paymethod_description']}
+Инструмент: {paymethod[trade['paymethod']]}
 –––
 Сумма: `{trade['amount']}` 
 –––

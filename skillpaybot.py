@@ -111,13 +111,29 @@ def create_message_text(trade):
     return messageText
 
 
+def edited_message_text(trade):
+    messageText = f'''
+Заявка: {trade['platform_id']}
+Инструмент: {trade['paymethod_description']}
+–––
+Сумма: `{trade['amount']}` 
+–––
+Адресат: `{trade['card_number']}`
+–––
+Статус: *свободная*
+
+'''
+    return messageText
 
 
 async def check_trades(dp):
     while 1:
+        # try:
         req_django = requests.get(URL_DJANGO + 'trades/active/')
+        # print(req_django.status_code)
         if req_django.status_code == 200:
             trades = req_django.json()
+            # print(trades)
 
             for trade in trades:
 
@@ -138,7 +154,7 @@ async def check_trades(dp):
             if tradeDetail.status_code == 200:
                 tradeDetail = tradeDetail.json()
                 data = select_data_from_database(trade_id=trade, type='kf')
-                text = create_message_text(tradeDetail['kftrade'])
+                text = edited_message_text(tradeDetail['kftrade'])
                 if tradeDetail['kftrade']['agent'] or tradeDetail['kftrade']['status'] == 'closed' or \
                     tradeDetail['kftrade']['status'] == 'time_cancel':
                     for userId, msgId in data:

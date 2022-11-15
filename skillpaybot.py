@@ -103,8 +103,6 @@ def create_message_text(trade):
 –––
 Сумма: `{trade['data']['amount']}` 
 –––
-Адресат: `{trade['data']['card_number']}`
-–––
 Статус: *свободная*
 
 '''

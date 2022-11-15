@@ -15,6 +15,10 @@ import sqlite3
 
 trade_cb = CallbackData("trade", "type", "id", "action")
 
+paymethod = {
+    443 : 'TINK',
+    3547 : 'SBER'
+}
 
 def init_database():
     con = sqlite3.connect("message.db")
@@ -93,63 +97,27 @@ def create_button_accept(trade_id, trade_type):
 
 
 def create_message_text(trade):
-    if trade['type'] == 'trade':
-        messageText = f'''
-Новая сделка! Покупка {trade['data']['cryptocurrency']} за {trade['data']['currency']}
-Сумма: {trade['data']['currency_amount']} {trade['data']['currency']}
+    messageText = f'''
+Заявка: {trade['data']['platform_id']}
+Инструмент: {paymethod[trade['data']['paymethod']]}
+–––
+Сумма: `{trade['data']['amount']}` 
+–––
+Адресат: `{trade['data']['card_number']}`
+–––
+Статус: *свободная*
+
 '''
-    elif trade['type'] == 'pay':
-        messageText = f'''
-Новая сделка! Покупка 
-Сумма: {trade['data']['amount']} RUB
-'''
-    elif trade['type'] == 'gar_trade':
-        messageText = f'''
-Новая сделка! Покупка {trade['data']['cryptocurrency']} за {trade['data']['currency']}
-Сумма: {trade['data']['currency_amount']} {trade['data']['currency']}
-'''
-    else:
-        messageText = f'''
-Заявка KF — {trade['data']['id']}                     
-Инструмент: {trade['data']['type']}
-Сумма: `{trade['data']['amount']}`
-                        '''
     return messageText
 
 
-def edited_message_text(trade):
-    if trade['type'] == 'trade':
-        messageText = f'''
-Новая сделка! Покупка {trade['data']['cryptocurrency']} за {trade['data']['currency']}
-Сумма: {trade['data']['currency_amount']} {trade['data']['currency']}
-'''
-    elif trade['type'] == 'pay':
-        messageText = f'''
-Новая сделка! Покупка 
-Сумма: {trade['data']['amount']} RUB
-'''
-    elif trade['type'] == 'gar_trade':
-        messageText = f'''
-Новая сделка! Покупка 
-Сумма: {trade['data']['amount']} RUB
-'''
-    else:
-        messageText = f'''
-Заявка KF — {trade['id']}                     
-Инструмент: {trade['type']}
-Сумма: `{trade['amount']}`
-                        '''
-    return messageText
 
 
 async def check_trades(dp):
     while 1:
-        # try:
         req_django = requests.get(URL_DJANGO + 'trades/active/')
-        # print(req_django.status_code)
         if req_django.status_code == 200:
             trades = req_django.json()
-            # print(trades)
 
             for trade in trades:
 
@@ -170,14 +138,9 @@ async def check_trades(dp):
             if tradeDetail.status_code == 200:
                 tradeDetail = tradeDetail.json()
                 data = select_data_from_database(trade_id=trade, type='kf')
-                text = edited_message_text(tradeDetail['kftrade'])
-                f = False
-                if tradeDetail['kftrade']['agent']:
-                    f = True
-                elif tradeDetail['kftrade']['status'] == 'closed' or tradeDetail['kftrade'][
-                    'status'] == 'time_cancel':
-                    f = True
-                if f:
+                text = create_message_text(tradeDetail['kftrade'])
+                if tradeDetail['kftrade']['agent'] or tradeDetail['kftrade']['status'] == 'closed' or \
+                    tradeDetail['kftrade']['status'] == 'time_cancel':
                     for userId, msgId in data:
                         try:
                             if str(tradeDetail['kftrade']['agent']) != str(userId):
@@ -201,6 +164,7 @@ async def check_trades(dp):
                 }
 
                 update_status = requests.post(URL_DJANGO + 'update/kf/trade/', json=data)
+
         gar_trades_db = select_trades_from_database('gar_trade')
         if gar_trades_db:
             gar_trades = [i[0] for i in gar_trades_db]
@@ -219,38 +183,17 @@ async def check_trades(dp):
             gar_trades_data = gar_trades_data.json()['gar_trade']
             for trade in gar_trades_data:
                 msgs = select_data_from_database(trade['id'], 'gar_trade')
-                if trade['status'] == 'canceled':
-                    for i in msgs:
+                if trade['status'] in ['canceled', 'completed'] or trade['agent']:
+                    for userId, msgId in msgs:
                         try:
-                            await bot.delete_message(i[0], i[1])
-                            delete_from_database(
-                                u_id=i[0], msg_id=i[1],
-                                trade_id=trade['id'], type='gar_trade')
+                            if str(userId) != str(trade['agent'])
+                                await bot.delete_message(userId, msgId)
                         except MessageToDeleteNotFound:
                             pass
-                elif trade['status'] == 'completed':
-                    for i in msgs:
-                        if i[0] != int(trade['agent']):
-                            try:
-                                await bot.delete_message(i[0], i[1])
-                                delete_from_database(
-                                    u_id=i[0], msg_id=i[1],
+                        finally:
+                            delete_from_database(
+                                    u_id=userId, msg_id=msgId,
                                     trade_id=trade['id'], type='gar_trade')
-                            except MessageToDeleteNotFound:
-                                pass
-                elif trade['status'] == 'pending':
-                    if trade['agent']:
-                        for i in msgs:
-                            if i[0] != int(trade['agent']):
-                                try:
-                                    await bot.delete_message(i[0], i[1])
-                                    delete_from_database(
-                                        u_id=i[0], msg_id=i[1],
-                                        trade_id=trade['id'], type='gar_trade')
-                                except MessageToDeleteNotFound:
-                                    pass
-                    else:
-                        pass
         await asyncio.sleep(1)
 
 async def on_startup(dispatcher):

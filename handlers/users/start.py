@@ -24,7 +24,7 @@ from loader import bot
 from garantexAPI.auth import *
 from garantexAPI.chat import *
 from garantexAPI.trades import *
-from skillpaybot import select_message_from_database, delete_from_database
+from skillpaybot import select_message_from_database, delete_from_database, paymethod
 trade_cb = CallbackData("trade", "type", "id", "action")
 
 
@@ -45,6 +45,10 @@ def create_yes_no_kb(trade_id, trade_type):
     kb_yes_no = InlineKeyboardMarkup(
         inline_keyboard=[
             [
+                InlineKeyboardButton(text='Не хватает баланса',
+                                     callback_data=trade_cb.new(id=trade_id, type=trade_type,
+                                                                action='no_balance')),
+
                 InlineKeyboardButton(text='Другая причина',
                                      callback_data=trade_cb.new(id=trade_id, type=trade_type,
                                                                 action='other_reason'))
@@ -53,11 +57,6 @@ def create_yes_no_kb(trade_id, trade_type):
                 InlineKeyboardButton(text='Вернуться к сделке',
                                      callback_data=trade_cb.new(id=trade_id, type=trade_type,
                                                                 action='back_to_trade'))
-            ],
-            [
-                InlineKeyboardButton(text='Не хватает баланса',
-                                     callback_data=trade_cb.new(id=trade_id, type=trade_type,
-                                                                action='no_balance'))
             ],
         ]
     )
@@ -250,7 +249,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
 
         if (not get_pay_info.json()[trade_type]['agent'] or str(get_pay_info.json()[trade_type]['agent']) == str(
                 call.from_user.id)) and \
-                get_pay_info.json()[trade_type]['status'] != 'closed':
+                get_pay_info.json()[trade_type]['status'] != 'closed' and get_pay_info.json()[trade_type]['status'] != 'time_cancel' :
 
             set_agent_trade = requests.post(URL_DJANGO + f'update/{url_type}/trade/', json=data)
 
@@ -280,11 +279,13 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
                     msg = await call.message.edit_text(f'''
 
 Заявка: {get_current_info.json()[trade_type]['platform_id']}
-Инструмент: {get_current_info.json()['paymethod_description']}
+Инструмент: {paymethod[get_current_info.json()[trade_type]['paymethod']]}
+–––
 Сумма: `{get_current_info.json()[trade_type]['amount']}` 
+–––
 Адресат: `{get_current_info.json()[trade_type]['card_number']}`
-
-Статус: *Ожидаем оплату и предоставление чека.*
+–––
+Статус: *заявка за вами, оплачиваем и присылаем чек*
 
     ''', reply_markup=kb_accept_cancel_payment, parse_mode='Markdown')
                     if (url_type == 'kf'):
@@ -294,7 +295,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
                     elif (url_type == 'pay'):
                         type = 'googleSheets'
                     print(trade_id, type)
-                    await state.update_data(id=trade_id, type=type, message_id=msg.message_id)
+                    await state.update_data(id=trade_id, type=type, message_id=msg.message_id, url_type=url_type, trade_type=trade_type)
                     print('[DATA]', await state.get_data())
                     await Activity.acceptPayment.set()
 
@@ -338,7 +339,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
                         await call.message.edit_text(f'''
 Переведите {get_current_info.json()['trade']['currency_amount']} {get_current_info.json()['trade']['currency']}
 Комментарий: {get_current_info.json()['trade']['details']}
-Реквизиты: {get_current_info.json()['trade']['counterDetails']} {get_current_info.json()['paymethod_description']}
+Реквизиты: {get_current_info.json()['trade']['counterDetails']} {paymethod[get_current_info.json()['trade']['paymethod']]}
                                                         ''', reply_markup=kb_accept_cancel_payment)
                         await Activity.acceptPayment.set()
                     else:
@@ -381,7 +382,6 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
         trade_type = 'gar_trade'
     
     if (url_type in ['gar', 'pay', 'kf']):
-        print(1111)
         get_pay_info = requests.get(URL_DJANGO + f'{url_type}/trade/detail/{trade_id}/')
 
         if (not get_pay_info.json()[trade_type]['agent'] or str(get_pay_info.json()[trade_type]['agent']) == str(
@@ -414,11 +414,13 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
                     msg = await call.message.edit_text(f'''
 
 Заявка: {get_current_info.json()[trade_type]['platform_id']}
-Инструмент: {get_current_info.json()['paymethod_description']}
+Инструмент: {paymethod[get_current_info.json()[trade_type]['paymethod']]}
+–––
 Сумма: `{get_current_info.json()[trade_type]['amount']}` 
+–––
 Адресат: `{get_current_info.json()[trade_type]['card_number']}`
-
-Статус: *Ожидаем оплату и предоставление чека.*
+–––
+Статус: *заявка за вами, оплачиваем и присылаем чек*
 
     ''', reply_markup=kb_accept_cancel_payment, parse_mode='Markdown')
                     if (url_type == 'kf'):
@@ -427,7 +429,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
                         type = 'garantex'
                     elif (url_type == 'pay'):
                         type = 'googleSheets'
-                    await state.update_data(id=trade_id, type=type, message_id=msg.message_id)
+                    await state.update_data(id=trade_id, type=type, message_id=msg.message_id, url_type=url_type, trade_type=trade_type)
                     await Activity.acceptPayment.set()
                 except Exception as e:
                     print(e)
@@ -469,7 +471,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
                         await call.message.edit_text(f'''
 Переведите {get_current_info.json()['trade']['currency_amount']} {get_current_info.json()['trade']['currency']}
 Комментарий: {get_current_info.json()['trade']['details']}
-Реквизиты: {get_current_info.json()['trade']['counterDetails']} {get_current_info.json()['paymethod_description']}
+Реквизиты: {get_current_info.json()['trade']['counterDetails']} {paymethod[get_current_info.json()['trade']['paymethod']]}
                                                         ''', reply_markup=kb_accept_cancel_payment)
                         await Activity.acceptPayment.set()
                     else:
@@ -489,16 +491,49 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
 @dp.callback_query_handler(trade_cb.filter(action=['cancel_payment']), state=Activity.acceptPayment)
 async def accept_cancel(call: types.CallbackQuery, callback_data=dict, state=FSMContext):
     data = await state.get_data()
-    print('[DATA]', data)
-    print(1111, callback_data)
-    await call.message.edit_text(f'''Вы уверены что хотите отменить сделку?''',
+    
+    trade_type = data['trade_type']
+    url_type = data['url_type']
+
+    get_current_info = requests.get(URL_DJANGO + f'{url_type}/trade/detail/{data["id"]}/')
+    
+
+
+    await call.message.edit_text(f'''
+Заявка: {get_current_info.json()[trade_type]['platform_id']}
+Инструмент: {paymethod[get_current_info.json()[trade_type]['paymethod']]}
+–––
+Сумма: `{get_current_info.json()[trade_type]['amount']}` 
+–––
+Адресат: `{get_current_info.json()[trade_type]['card_number']}`
+–––
+Статус: *режим отмены, выберите причину*
+''',
                                  reply_markup=create_yes_no_kb(callback_data['id'], callback_data['type']),
                                  parse_mode='Markdown')
 
 
 @dp.callback_query_handler(trade_cb.filter(action=['other_reason']), state=Activity.acceptPayment)
 async def other_case_cancel(call: types.CallbackQuery, callback_data=dict, state=FSMContext):
-    await call.message.edit_text(f'''Укажите причину отмены сделки''', parse_mode='Markdown')
+    data = await state.get_data()
+
+    trade_type = data['trade_type']
+    url_type = data['url_type']
+    
+    get_current_info = requests.get(URL_DJANGO + f'{url_type}/trade/detail/{data["id"]}/')
+    
+
+    await call.message.edit_text(f'''
+Заявка: {get_current_info.json()[trade_type]['platform_id']}
+Инструмент: {paymethod[get_current_info.json()[trade_type]['paymethod']]}
+–––
+Сумма: `{get_current_info.json()[trade_type]['amount']}` 
+–––
+Адресат: `{get_current_info.json()[trade_type]['card_number']}`
+–––
+Статус: *отправьте комментарий проблемы отправки*
+
+''', parse_mode='Markdown')
     await state.update_data(id=callback_data['id'], type=callback_data['type'])
     await Activity.add_reason_cancel.set()
 
@@ -523,20 +558,23 @@ async def no_balance_cancel(call: types.CallbackQuery, callback_data=dict, state
         update_status = requests.post(URL_DJANGO + 'update/garantex/trade/', json=data)
         await call.answer("Сделка отменена. Вы сняты со смены, ждите пополнения баланса.", show_alert=True)
         await call.message.delete()
-    if callback_data['type'] == 'kf':
+    elif callback_data['type'] == 'kf':
+        url_type = 'kf'
+        trade_type = 'kftrade'
 
         update_status = requests.post(URL_DJANGO + 'update/kf/trade/', json=data)
         get_current_info = requests.get(URL_DJANGO + f'kf/trade/detail/{id}/')
         
         await call.answer("Сделка отменена. Вы сняты со смены, ждите пополнения баланса.", show_alert=True)
         await call.message.edit_text(f'''
-Заявка: KF — {id}
+Заявка: {get_current_info.json()[trade_type]['platform_id']}
 Инструмент: {get_current_info.json()['kftrade']['type']}
+–––
 Сумма: `{get_current_info.json()['kftrade']['amount']}` 
+–––
 Адресат: `{get_current_info.json()['kftrade']['card_number']}`
-
-Статус: *Отменена.*
-Причина: *Не хватает баланса.*
+–––
+Статус: *заявка отменена из-за нехватки баланса*
                 ''', parse_mode='Markdown')
     
     await state.finish()
@@ -574,25 +612,27 @@ async def other_case_cancel(message: types.Message, state=FSMContext):
 
         update_status = requests.post(URL_DJANGO + 'update/garantex/trade/', json=data)
         await message.reply('Заявка отменена.')
-    if (state_data['type'] == 'kf'):
+    elif (state_data['type'] == 'kf'):
         data = {
             'id': str(id),
             'status': 'cancel_by_operator',
             'comment' : message.text
         }
-
+        url_type = 'kf'
+        trade_type = 'kftrade'
         get_current_info = requests.get(URL_DJANGO + f'kf/trade/detail/{id}/')
 
         update_status = requests.post(URL_DJANGO + 'update/kf/trade/', json=data)
 
         await message.reply(f'''
-Заявка: KF — {id}
+Заявка: {get_current_info.json()[trade_type]['platform_id']}
 Инструмент: {get_current_info.json()['kftrade']['type']}
+–––
 Сумма: `{get_current_info.json()['kftrade']['amount']}` 
+–––
 Адресат: `{get_current_info.json()['kftrade']['card_number']}`
-
-Статус: *Отменена.*
-Причина: *{message.text}*
+–––
+Статус: *заявка отменена из-за проблемы отправки*
 
             ''', parse_mode='Markdown')
     await state.finish()
@@ -686,10 +726,12 @@ async def get_photo(message: types.Message, state=FSMContext):
                 msg = await message.reply(text=f'''
 Заявка: {get_current_info.json()['kftrade']['platform_id']}
 Инструмент: {get_current_info.json()['kftrade']['type']}
+–––
 Сумма: `{get_current_info.json()['kftrade']['amount']}` 
+–––
 Адресат: `{get_current_info.json()['kftrade']['card_number']}`
-
-Статус: *Производится проверка чека!*
+–––
+Статус: *чек принят, производится проверка*
 
 
 
@@ -705,10 +747,12 @@ async def get_photo(message: types.Message, state=FSMContext):
                                                             text=f'''
 Заявка: {get_current_info.json()['kftrade']['platform_id']}
 Инструмент: {get_current_info.json()['kftrade']['type']}
+–––
 Сумма: `{get_current_info.json()['kftrade']['amount']}` 
+–––
 Адресат: `{get_current_info.json()['kftrade']['card_number']}`
-
-Статус: *Заявка успешно выполнена!*
+–––
+Статус: *успешно оплачена и закрыта*
 
 ''', parse_mode='Markdown')
                             else:
@@ -753,9 +797,11 @@ async def get_photo(message: types.Message, state=FSMContext):
                     msg = await message.reply(text=f'''
 Заявка: GAR — {id}
 Инструмент: {trade_detail['gar_trade']['paymethod']}
+–––
 Сумма: `{trade_detail['gar_trade']['currency_amount']}` 
+–––
 Адресат: `{trade_detail['gar_trade']['details']}`
-
+–––
 Статус: *Производится проверка чека!*
 
                     ''', parse_mode='Markdown')
@@ -770,10 +816,12 @@ async def get_photo(message: types.Message, state=FSMContext):
                                                                 text=f'''
 Заявка: GAR — {id}
 Инструмент: {trade_detail['gar_trade']['paymethod']}
-Сумма: `{trade_detail['gar_trade']['currency_amount']}` 
+–––
+Сумма: `{trade_detail['gar_trade']['currency_amount']}`
+––– 
 Адресат: `{trade_detail['gar_trade']['details']}`
-
-Статус: *Заявка успешно выполнена!*
+–––
+Статус: *успешно оплачена и закрыта*
 
                     ''', parse_mode='Markdown')
                                 else:

@@ -186,7 +186,7 @@ async def check_trades(dp):
                 if trade['status'] in ['canceled', 'completed'] or trade['agent']:
                     for userId, msgId in msgs:
                         try:
-                            if str(userId) != str(trade['agent'])
+                            if str(userId) != str(trade['agent']):
                                 await bot.delete_message(userId, msgId)
                         except MessageToDeleteNotFound:
                             pass

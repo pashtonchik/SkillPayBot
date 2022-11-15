@@ -118,8 +118,6 @@ def edited_message_text(trade):
 –––
 Сумма: `{trade['amount']}` 
 –––
-Адресат: `{trade['card_number']}`
-–––
 Статус: *свободная*
 
 '''
@@ -173,7 +171,7 @@ async def check_trades(dp):
         for trade in kf_trades:
             time_add_kf = datetime.strptime(trade['date_create'].split('.')[0], "%Y-%m-%dT%H:%M:%S").timestamp()
             time_now = datetime.now().timestamp()
-            if time_now - time_add_kf > 3600:
+            if time_now - time_add_kf > 900:
                 data = {
                     'id': trade['id'],
                     'status': 'time_cancel',

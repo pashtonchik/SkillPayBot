@@ -683,7 +683,7 @@ async def get_photo(message: types.Message, state=FSMContext):
                 'type': 'payment'
             }
 
-            url = f'https://bitzlato.bz/api/p2p/trade/{id}'
+            url = f'https://bitzlato.bz/api2/p2p/trade/{id}'
 
             await bot.delete_message(chat_id=message.from_user.id, message_id=msg_id)
             msg = await message.reply(text=f'''
@@ -699,7 +699,7 @@ async def get_photo(message: types.Message, state=FSMContext):
 ''', parse_mode='Markdown')
 
             req_change_type = requests.post(url, headers=headers, proxies=proxy, json=data)
-
+            
             while 1:
                 try:
                     req = requests.get(URL_DJANGO + f'bz/trade/detail/{id}')

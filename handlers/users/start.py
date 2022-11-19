@@ -249,7 +249,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
                 url_type = 'gar'
                 trade_type = 'gar_trade'
 
-            if url_type in ['gar', 'pay', 'kf']:
+            if url_type in ['gar', 'pay', 'kf', 'bz']:
 
                 get_pay_info = requests.get(URL_DJANGO + f'{url_type}/trade/detail/{trade_id}/')
 
@@ -302,6 +302,8 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
                                 type = 'garantex'
                             elif url_type == 'pay':
                                 type = 'googleSheets'
+                            elif url_type == 'bz':
+                                type = 'BZ'
                             print(trade_id, type)
                             await state.update_data(id=trade_id, type=type, message_id=msg.message_id,
                                                     url_type=url_type, trade_type=trade_type)
@@ -319,59 +321,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
                     await call.answer('Заявка уже в работе.', show_alert=True)
                     await call.message.delete()
 
-            else:
-                get_trade_info = requests.get(URL_DJANGO + f'bz/trade/detail/{trade_id}/')
-                if not get_trade_info.json()['bz']['agent'] or str(get_trade_info.json()['bz']['agent']) == str(
-                        call.from_user.id):
-
-                    set_agent_trade = requests.post(URL_DJANGO + f'update/bz/trade/', json=data)
-
-                    get_current_info = requests.get(URL_DJANGO + f'bz/trade/detail/{trade_id}/')
-                    if get_current_info.json()['bz']['agent'] == str(call.from_user.id):
-                        headers = authorization(
-                            get_current_info.json()['user']['key'],
-                            get_current_info.json()['user']['email']
-                        )
-
-                        proxy = get_current_info.json()['user']['proxy']
-
-                        data = {
-                            'type': 'confirm-trade'
-                        }
-
-                        url = f'https://bitzlato.com/api/p2p/trade/{trade_id}/'
-                        try:
-                            # req_change_type = requests.post(url, headers=headers, proxies=proxy, json=data)
-
-                            # if req_change_type.status_code == 200:
-                            if True:
-                                await call.answer('Вы успешно взяли заявку в работу!', show_alert=True)
-                                print(11111)
-                                msg = await call.message.edit_text(f'''
-        Переведите {get_current_info.json()['bz']['amount']} {get_current_info.json()['bz']['currency']}
-        Комментарий: {get_current_info.json()['bz']['counterDetails']}
-        Реквизиты: {get_current_info.json()['bz']['card_number']} {paymethod[get_current_info.json()['bz']['paymethod']]}
-                                                                ''', reply_markup=kb_accept_cancel_payment)
-                                type = 'bz'
-                                trade_type = 'bz'
-                                await state.update_data(id=trade_id, type=type, message_id=msg.message_id,
-                                                        url_type=url_type, trade_type=trade_type)
-                                await Activity.acceptPayment.set()
-                                print(222)
-                            else:
-                                await call.answer('Произошла ошибка, нажмите кнопку заново.')
-                        except Exception as e:
-                            await call.answer('Произошла ошибка, нажмите кнопку заново.')
-
-                    else:
-                        await call.answer("Заявка уже в работе", show_alert=True)
-                        await call.message.delete()
-                else:
-                    await call.answer("Заявка уже в работе", show_alert=True)
-                    await call.message.delete()
-    else:
-        await call.answer('У вас уже есть заявка в работе!', show_alert=True)
-
+            
 
 @dp.callback_query_handler(trade_cb.filter(action=['back_to_trade']), state=Activity.acceptPayment)
 async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSMContext):
@@ -382,8 +332,8 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
     kb_accept_cancel_payment = create_accept_cancel_kb(trade_id, callback_data['type'])
     print(kb_accept_cancel_payment)
     if callback_data['type'] == 'BZ':
-        url_type = 'trade'
-        trade_type = 'trade'
+        url_type = 'bz'
+        trade_type = 'bz'
 
     elif callback_data['type'] == 'googleSheets':
         url_type = 'pay'
@@ -397,7 +347,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
         url_type = 'gar'
         trade_type = 'gar_trade'
 
-    if url_type in ['gar', 'pay', 'kf']:
+    if url_type in ['gar', 'pay', 'kf', 'bz']:
         get_pay_info = requests.get(URL_DJANGO + f'{url_type}/trade/detail/{trade_id}/')
 
         if (not get_pay_info.json()[trade_type]['agent'] or str(get_pay_info.json()[trade_type]['agent']) == str(
@@ -445,6 +395,8 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
                         type = 'garantex'
                     elif (url_type == 'pay'):
                         type = 'googleSheets'
+                    elif (url_type == 'bz'):
+                        type = 'BZ'
                     await state.update_data(id=trade_id, type=type, message_id=msg.message_id, url_type=url_type,
                                             trade_type=trade_type)
                     await Activity.acceptPayment.set()
@@ -457,50 +409,6 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
                 await call.message.delete()
         else:
             await call.answer('Заявка уже в работе.', show_alert=True)
-            await call.message.delete()
-
-    else:
-        get_trade_info = requests.get(URL_DJANGO + f'bz/trade/detail/{trade_id}/')
-        if not get_trade_info.json()['bz']['agent'] or str(get_trade_info.json()['bz']['agent']) == str(
-                call.from_user.id):
-
-            set_agent_trade = requests.post(URL_DJANGO + f'update/bz/trade/', json=data)
-
-            get_current_info = requests.get(URL_DJANGO + f'bz/trade/detail/{trade_id}/')
-            if get_current_info.json()['bz']['agent'] == str(call.from_user.id):
-                headers = authorization(
-                    get_current_info.json()['user']['key'],
-                    get_current_info.json()['user']['email']
-                )
-
-                proxy = get_current_info.json()['user']['proxy']
-
-                data = {
-                    'type': 'confirm-trade'
-                }
-
-                url = f'https://bitzlato.com/api/p2p/trade/{trade_id}/'
-                try:
-                    req_change_type = requests.post(url, headers=headers, proxies=proxy, json=data)
-
-                    if req_change_type.status_code == 200:
-                        await call.answer('Вы успешно взяли заявку в работу!', show_alert=True)
-                        await call.message.edit_text(f'''
-Переведите {get_current_info.json()['bz']['currency_amount']} {get_current_info.json()['bz']['currency']}
-Комментарий: {get_current_info.json()['bz']['details']}
-Реквизиты: {get_current_info.json()['bz']['counterDetails']} {paymethod[get_current_info.json()['bz']['paymethod']]}
-                                                        ''', reply_markup=kb_accept_cancel_payment)
-                        await Activity.acceptPayment.set()
-                    else:
-                        await call.answer('Произошла ошибка, нажмите кнопку заново.')
-                except Exception as e:
-                    await call.answer('Произошла ошибка, нажмите кнопку заново.')
-
-            else:
-                await call.answer("Заявка уже в работе", show_alert=True)
-                await call.message.delete()
-        else:
-            await call.answer("Заявка уже в работе", show_alert=True)
             await call.message.delete()
 
 

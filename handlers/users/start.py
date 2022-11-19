@@ -673,6 +673,16 @@ async def get_photo(message: types.Message, state=FSMContext):
 
             r = requests.post(url, headers=headers, proxies=proxy, files=files)
 
+            headers = authorization(get_trade_detail.json()['user']['key'], get_trade_detail.json()['user']['email'])
+
+            proxy = get_trade_detail.json()['user']['proxy']
+
+            data = {
+                'type': 'payment'
+            }
+
+            url = f'https://bitzlato.bz/api/p2p/trade/{id}'
+
             asyncio.create_task(confirm_payment(id=id, message=message, state=state))
         else:
             await message.reply(text='Вы отправили чек не в том формате, пришлите заново в формате png')

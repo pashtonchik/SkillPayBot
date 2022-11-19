@@ -473,7 +473,7 @@ async def no_balance_cancel(call: types.CallbackQuery, callback_data=dict, state
     change_status_agent = requests.post(URL_DJANGO + 'edit_agent_status/', json=body)
     data = {
         'id': str(id),
-        'status': 'again_pending' if callback_data['type'] == 'garantex' else 'trade_created',
+        'status': 'again_pending' if callback_data['type'] == 'garantex' else 'again_trade_created',
         'agent': None,
     }
     
@@ -685,9 +685,60 @@ async def get_photo(message: types.Message, state=FSMContext):
 
             url = f'https://bitzlato.bz/api/p2p/trade/{id}'
 
+            await bot.delete_message(chat_id=message.from_user.id, message_id=msg_id)
+            msg = await message.reply(text=f'''
+Заявка: {get_trade_detail.json()['bz']['platform_id']}
+Инструмент: {paymethod[get_trade_detail.json()['bz']['paymethod']]}
+–––
+Сумма: `{get_trade_detail.json()['bz']['amount']}` 
+–––
+Адресат: `{get_trade_detail.json()['bz']['card_number']}`
+–––
+Статус: *чек принят, производится проверка*
+
+''', parse_mode='Markdown')
+
             req_change_type = requests.post(url, headers=headers, proxies=proxy, json=data)
 
-            asyncio.create_task(confirm_payment(id=id, message=message, state=state))
+            while 1:
+                try:
+                    req = requests.get(URL_DJANGO + f'trade/detail/{id}')
+                    if req.status_code == 200:
+                        trade_info = req.json()
+                        if trade_info['trade']['status'] == 'confirm_payment':
+                            body = {
+                                'tg_id': message.from_user.id,
+                                'options': {
+                                    'is_working_now': False,
+                                    'is_instead': True,
+                                }
+                            }
+
+                            change_status_agent = requests.post(URL_DJANGO + 'edit_agent_status/', json=body)
+
+                            if change_status_agent.status_code == 200:
+                                await bot.edit_message_text(chat_id=message.from_user.id, message_id=msg.message_id,
+                                                                text=f'''
+Заявка: {get_trade_detail.json()['bz']['platform_id']}
+Инструмент: {paymethod[get_trade_detail.json()['bz']['paymethod']]}
+–––
+Сумма: `{get_trade_detail.json()['bz']['amount']}` 
+–––
+Адресат: `{get_trade_detail.json()['bz']['card_number']}`
+–––
+Статус: *успешно оплачена и закрыта*
+
+                    ''', parse_mode='Markdown')
+                            else:
+                                await message.answer('Произошла ошибка, свяжитесь с админом.')
+
+                            await state.finish()
+                            break
+                    await asyncio.sleep(1)
+
+                except Exception as e:
+                    print(e)
+                    continue
         else:
             await message.reply(text='Вы отправили чек не в том формате, пришлите заново в формате png')
         

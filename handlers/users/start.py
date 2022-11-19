@@ -677,11 +677,15 @@ async def get_photo(message: types.Message, state=FSMContext):
 
             proxy = get_trade_detail.json()['user']['proxy']
 
+
+
             data = {
                 'type': 'payment'
             }
 
             url = f'https://bitzlato.bz/api/p2p/trade/{id}'
+
+            req_change_type = requests.post(url, headers=headers, proxies=proxy, json=data)
 
             asyncio.create_task(confirm_payment(id=id, message=message, state=state))
         else:

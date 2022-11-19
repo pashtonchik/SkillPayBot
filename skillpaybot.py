@@ -74,8 +74,8 @@ def select_trades_from_database(type):
 
 
 def create_button_accept(trade_id, trade_type):
-    if trade_type == 'trade':
-        trade_type = 'BZ'
+    if trade_type == 'bz':
+        trade_type = 'bz'
     elif trade_type == 'pay':
         trade_type = 'googleSheets'
     elif trade_type == 'gar_trade':
@@ -162,6 +162,27 @@ async def check_trades(dp):
                             continue
                         finally:
                             delete_from_database(userId, msgId, trade, 'kf')
+
+        trades = select_trades_from_database('bz')
+        for trade in trades:
+            trade = trade[0]
+            tradeDetail = requests.get(URL_DJANGO + f'bz/trade/detail/{trade}/')
+
+            if tradeDetail.status_code == 200:
+                tradeDetail = tradeDetail.json()
+                data = select_data_from_database(trade_id=trade, type='bz')
+                text = edited_message_text(tradeDetail['bz'])
+                if tradeDetail['bz']['agent'] or tradeDetail['bz']['status'] == 'closed' or \
+                    tradeDetail['bz']['status'] == 'time_cancel':
+                    for userId, msgId in data:
+                        try:
+                            if str(tradeDetail['bz']['agent']) != str(userId):
+                                await bot.delete_message(chat_id=userId, message_id=msgId)
+                        except Exception as e:
+                            print(e)
+                            continue
+                        finally:
+                            delete_from_database(userId, msgId, trade, 'bz')
 
         req_kftrades = requests.get(URL_DJANGO + 'get/free/kftrades/')
         kf_trades = req_kftrades.json()

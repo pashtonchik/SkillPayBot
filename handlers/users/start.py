@@ -221,6 +221,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
     body = {
         'tg_id': call.from_user.id
     }
+
     r = requests.post(URL_DJANGO + 'get_agent_info/', json=body)
     if r.status_code == 200:
         if r.json()[0]['is_working_now'] == False:
@@ -233,7 +234,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
             kb_accept_cancel_payment = create_accept_cancel_kb(trade_id, callback_data['type'])
             print(kb_accept_cancel_payment)
 
-            if callback_data['type'] == 'BZ':
+            if callback_data['type'] == 'bz':
                 url_type = 'bz'
                 trade_type = 'bz'
 
@@ -303,7 +304,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
                             elif url_type == 'pay':
                                 type = 'googleSheets'
                             elif url_type == 'bz':
-                                type = 'BZ'
+                                type = 'bz'
                             print(trade_id, type)
                             await state.update_data(id=trade_id, type=type, message_id=msg.message_id,
                                                     url_type=url_type, trade_type=trade_type)
@@ -331,7 +332,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
     trade_id = callback_data['id']
     kb_accept_cancel_payment = create_accept_cancel_kb(trade_id, callback_data['type'])
     print(kb_accept_cancel_payment)
-    if callback_data['type'] == 'BZ':
+    if callback_data['type'] == 'bz':
         url_type = 'bz'
         trade_type = 'bz'
 
@@ -396,7 +397,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
                     elif (url_type == 'pay'):
                         type = 'googleSheets'
                     elif (url_type == 'bz'):
-                        type = 'BZ'
+                        type = 'bz'
                     await state.update_data(id=trade_id, type=type, message_id=msg.message_id, url_type=url_type,
                                             trade_type=trade_type)
                     await Activity.acceptPayment.set()
@@ -475,8 +476,20 @@ async def no_balance_cancel(call: types.CallbackQuery, callback_data=dict, state
         'status': 'again_pending' if callback_data['type'] == 'garantex' else 'trade_created',
         'agent': None,
     }
+    
     if callback_data['type'] == 'garantex':
         update_status = requests.post(URL_DJANGO + 'update/garantex/trade/', json=data)
+        get_current_info = requests.get(URL_DJANGO + f'gar/trade/detail/{id}/')
+        await call.message.edit_text(f'''
+Заявка: {get_current_info.json()['gar_trade']['platform_id']}
+Инструмент: {paymethod[get_current_info.json()['gar_trade']['paymethod']]}
+–––
+Сумма: `{get_current_info.json()['gar_trade']['amount']}` 
+–––
+Адресат: `{get_current_info.json()['gar_trade']['card_number']}`
+–––
+Статус: *заявка отменена из-за нехватки баланса*
+                ''', parse_mode='Markdown')
         await call.answer("Сделка отменена. Вы сняты со смены, ждите пополнения баланса.", show_alert=True)
         await call.message.delete()
     elif callback_data['type'] == 'kf':
@@ -489,7 +502,7 @@ async def no_balance_cancel(call: types.CallbackQuery, callback_data=dict, state
         await call.answer("Сделка отменена. Вы сняты со смены, ждите пополнения баланса.", show_alert=True)
         await call.message.edit_text(f'''
 Заявка: {get_current_info.json()[trade_type]['platform_id']}
-Инструмент: {get_current_info.json()['kftrade']['type']}
+Инструмент: {paymethod[get_current_info.json()[trade_type]['paymethod']]}
 –––
 Сумма: `{get_current_info.json()['kftrade']['amount']}` 
 –––
@@ -498,6 +511,21 @@ async def no_balance_cancel(call: types.CallbackQuery, callback_data=dict, state
 Статус: *заявка отменена из-за нехватки баланса*
                 ''', parse_mode='Markdown')
 
+    elif callback_data['type'] == 'bz' :
+        update_status = requests.post(URL_DJANGO + 'update/bz/trade/', json=data)
+        get_current_info = requests.get(URL_DJANGO + f'bz/trade/detail/{id}/')
+
+        await call.answer("Сделка отменена. Вы сняты со смены, ждите пополнения баланса.", show_alert=True)
+        await call.message.edit_text(f'''
+Заявка: {get_current_info.json()['bz']['platform_id']}
+Инструмент: {paymethod[get_current_info.json()['bz']['paymethod']]}
+–––
+Сумма: `{get_current_info.json()['bz']['amount']}` 
+–––
+Адресат: `{get_current_info.json()['bz']['card_number']}`
+–––
+Статус: *заявка отменена из-за нехватки баланса*
+                ''', parse_mode='Markdown')
     await state.finish()
 
 
@@ -548,11 +576,52 @@ async def other_case_cancel(message: types.Message, state=FSMContext):
 
         await message.reply(f'''
 Заявка: {get_current_info.json()[trade_type]['platform_id']}
-Инструмент: {get_current_info.json()['kftrade']['type']}
+Инструмент: {paymethod[get_current_info.json()[trade_type]['paymethod']]}
 –––
 Сумма: `{get_current_info.json()['kftrade']['amount']}` 
 –––
 Адресат: `{get_current_info.json()['kftrade']['card_number']}`
+–––
+Статус: *заявка отменена из-за проблемы отправки*
+
+            ''', parse_mode='Markdown')
+    
+    elif (state_data['type'] == 'bz'):
+        data = {
+            'id': str(id),
+            'status': 'cancel_by_operator',
+            'comment': message.text
+        }
+        update_status = requests.post(URL_DJANGO + 'update/kf/trade/', json=data)
+
+        get_current_info = requests.get(URL_DJANGO + f'bz/trade/detail/{id}/')
+        key = get_current_info.json()['user']['key']
+        proxy = get_current_info.json()['user']['proxy']
+        email = get_current_info.json()['user']['email']
+        send_message = f'https://bitzlato.bz/api/p2p/trade/{id}/chat/'
+        headers = authorization(key, email)
+        data_message = {
+            'message': f'{message.text}.',
+            'payload': {
+                'message': 'string'
+            }
+        }
+        send_message_req = requests.post(send_message, headers=headers, proxies=proxy, json=data_message)
+
+        header = authorization(key=key, email_bz=email)
+        data_cancel = {
+            'type': "cancel"
+        }
+        adv_requests = requests.post(f'https://bitzlato.bz/api/p2p/trade/{id}', headers=header,
+                                 proxies=proxy, json=data_cancel)
+
+        await message.reply(f'''
+Заявка: {get_current_info.json()['bz']['platform_id']}
+Инструмент: {paymethod[get_current_info.json()['bz']['paymethod']]}
+–––
+Сумма: `{get_current_info.json()['bz']['amount']}` 
+–––
+Адресат: `{get_current_info.json()['bz']['card_number']}`
 –––
 Статус: *заявка отменена из-за проблемы отправки*
 
@@ -573,38 +642,41 @@ async def get_photo(message: types.Message, state=FSMContext):
             'is_instead': True,
         }
     }
-    if data['type'] == 'BZ':
+    if data['type'] == 'bz':
         id = data['id']
 
-        get_trade_detail = requests.get(URL_DJANGO + f'trade/detail/{id}/')
+        get_trade_detail = requests.get(URL_DJANGO + f'bz/trade/detail/{id}/')
         key = get_trade_detail.json()['user']['key']
         proxy = get_trade_detail.json()['user']['proxy']
         email = get_trade_detail.json()['user']['email']
-
         file_name = f'/root/prod/SkillPay-Django/tgchecks/{id}_{message.from_user.id}.png'
         await message.photo[-1].download(file_name)
-        send_message = f'https://bitzlato.bz/api/p2p/trade/{id}/chat/'
-        headers = authorization(key, email)
-        data_message = {
-            'message': 'Оплатил.',
-            'payload': {
-                'message': 'string'
+        if message.content_type == 'photo' and message.document.file_name[-3:] == 'png':
+            send_message = f'https://bitzlato.bz/api/p2p/trade/{id}/chat/'
+            headers = authorization(key, email)
+            data_message = {
+                'message': 'Оплатил.',
+                'payload': {
+                    'message': 'string'
+                }
             }
-        }
-        send_message_req = requests.post(send_message, headers=headers, proxies=proxy, json=data_message)
-        url = f'https://bitzlato.bz/api/p2p/trade/{id}/chat/sendfile'
+            send_message_req = requests.post(send_message, headers=headers, proxies=proxy, json=data_message)
+            url = f'https://bitzlato.bz/api/p2p/trade/{id}/chat/sendfile'
 
-        data = {
-            'mime_type': 'image/png',
-            'name': 'Check.png'
-        }
-        files = {'file': open(file_name, 'rb')}
+            data = {
+                'mime_type': 'image/png',
+                'name': 'Check.png'
+            }
+            files = {'file': open(file_name, 'rb')}
 
-        headers = authorization(key, email)
+            headers = authorization(key, email)
 
-        r = requests.post(url, headers=headers, proxies=proxy, files=files)
+            r = requests.post(url, headers=headers, proxies=proxy, files=files)
 
-        asyncio.create_task(confirm_payment(id=id, message=message, state=state))
+            asyncio.create_task(confirm_payment(id=id, message=message, state=state))
+        else:
+            await message.reply(text='Вы отправили чек не в том формате, пришлите заново в формате png')
+        
     elif data['type'] == 'googleSheets':
         file_name = cheques_base + f'pay{id}_{message.from_user.id}.png'
         await message.photo[-1].download(file_name)
@@ -646,7 +718,7 @@ async def get_photo(message: types.Message, state=FSMContext):
                 await bot.delete_message(chat_id=message.from_user.id, message_id=msg_id)
                 msg = await message.reply(text=f'''
 Заявка: {get_current_info.json()['kftrade']['platform_id']}
-Инструмент: {get_current_info.json()['kftrade']['type']}
+Инструмент: {paymethod[get_current_info.json()['kftrade']['paymethod']]}
 –––
 Сумма: `{get_current_info.json()['kftrade']['amount']}` 
 –––
@@ -667,7 +739,7 @@ async def get_photo(message: types.Message, state=FSMContext):
                                 await bot.edit_message_text(chat_id=message.from_user.id, message_id=msg.message_id,
                                                             text=f'''
 Заявка: {get_current_info.json()['kftrade']['platform_id']}
-Инструмент: {get_current_info.json()['kftrade']['type']}
+Инструмент: {paymethod[get_current_info.json()['kftrade']['paymethod']]}
 –––
 Сумма: `{get_current_info.json()['kftrade']['amount']}` 
 –––

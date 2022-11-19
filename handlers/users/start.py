@@ -651,7 +651,7 @@ async def get_photo(message: types.Message, state=FSMContext):
         email = get_trade_detail.json()['user']['email']
         file_name = f'/root/prod/SkillPay-Django/tgchecks/{id}_{message.from_user.id}.png'
         await message.photo[-1].download(file_name)
-        if message.content_type == 'photo' and message.document.file_name[-3:] == 'png':
+        if message.content_type == 'photo':
             send_message = f'https://bitzlato.bz/api/p2p/trade/{id}/chat/'
             headers = authorization(key, email)
             data_message = {

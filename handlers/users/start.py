@@ -833,7 +833,7 @@ async def get_photo(message: types.Message, state=FSMContext):
         trade_detail = get_trade_detail.json()
         jwt = get_jwt(uid=trade_detail['auth']['uid'], private_key=trade_detail['auth']['private_key'])
 
-        file_name = f'/root/dev/SkillPay-Django/gar_checks/gar{id}_{message.from_user.id}.pdf'
+        file_name = f'/root/prod/SkillPay-Django/gar_checks/gar{id}_{message.from_user.id}.pdf'
         if message.content_type == 'document' and message.document.file_name[-3:] == 'pdf':
             await message.document.download(destination_file=file_name)
             data = {

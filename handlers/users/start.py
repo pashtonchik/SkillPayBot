@@ -262,6 +262,8 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
 
                     set_agent_trade = requests.post(URL_DJANGO + f'update/{url_type}/trade/', json=data)
 
+                    print(set_agent_trade.status_code)
+
                     get_current_info = requests.get(URL_DJANGO + f'{url_type}/trade/detail/{trade_id}/')
 
                     if str(get_current_info.json()[trade_type]['agent']) == str(call.from_user.id):
@@ -478,7 +480,7 @@ async def no_balance_cancel(call: types.CallbackQuery, callback_data=dict, state
     }
     
     if callback_data['type'] == 'garantex':
-        update_status = requests.post(URL_DJANGO + 'update/garantex/trade/', json=data)
+        update_status = requests.post(URL_DJANGO + 'update/gar/trade/', json=data)
         get_current_info = requests.get(URL_DJANGO + f'gar/trade/detail/{id}/')
         await call.message.edit_text(f'''
 Заявка: {get_current_info.json()['gar_trade']['platform_id']}
@@ -491,7 +493,6 @@ async def no_balance_cancel(call: types.CallbackQuery, callback_data=dict, state
 Статус: *заявка отменена из-за нехватки баланса*
                 ''', parse_mode='Markdown')
         await call.answer("Сделка отменена. Вы сняты со смены, ждите пополнения баланса.", show_alert=True)
-        await call.message.delete()
     elif callback_data['type'] == 'kf':
         url_type = 'kf'
         trade_type = 'kftrade'
@@ -560,7 +561,7 @@ async def other_case_cancel(message: types.Message, state=FSMContext):
             'status': 'canceled',
         }
 
-        update_status = requests.post(URL_DJANGO + 'update/garantex/trade/', json=data)
+        update_status = requests.post(URL_DJANGO + 'update/gar/trade/', json=data)
         await message.reply('Заявка отменена.')
     elif (state_data['type'] == 'kf'):
         data = {
@@ -839,7 +840,7 @@ async def get_photo(message: types.Message, state=FSMContext):
                 'id': id,
                 'cheque': f'gar_checks/gar{id}_{message.from_user.id}.pdf'
             }
-            upload = requests.post(URL_DJANGO + 'update/garantex/trade/', json=data)
+            upload = requests.post(URL_DJANGO + 'update/gar/trade/', json=data)
             if upload.status_code == 200:
                 jwt = get_jwt(uid=trade_detail['auth']['uid'], private_key=trade_detail['auth']['private_key'])
                 header = {
@@ -891,8 +892,8 @@ async def get_photo(message: types.Message, state=FSMContext):
                 else:
                     await message.answer('Произошла ошибка при скачивании документа. Свяжитесь с админом.')
                     await state.finish()
-            else:
-                await message.reply(text='Вы отправили чек не в том формате, пришлите заново в формате pdf')
+        else:
+            await message.reply(text='Вы отправили чек не в том формате, пришлите заново в формате pdf')
 
 
 @dp.callback_query_handler(text='Назад')

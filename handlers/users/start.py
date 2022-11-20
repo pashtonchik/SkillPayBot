@@ -588,7 +588,7 @@ async def other_case_cancel(message: types.Message, state=FSMContext):
             'status': 'cancel_by_operator',
             'comment': message.text
         }
-        update_status = requests.post(URL_DJANGO + 'update/kf/trade/', json=data)
+        update_status = requests.post(URL_DJANGO + 'update/bz/trade/', json=data)
 
         get_current_info = requests.get(URL_DJANGO + f'bz/trade/detail/{id}/')
         key = get_current_info.json()['user']['key']

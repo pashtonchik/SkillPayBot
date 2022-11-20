@@ -1,6 +1,6 @@
 import requests
 
-URL_DJANGO = 'http://194.58.92.160:8001/api/'
+URL_DJANGO = 'http://194.58.92.160:8000/api/'
 
 
 # trade_info = {
@@ -19,14 +19,14 @@ URL_DJANGO = 'http://194.58.92.160:8001/api/'
 for i in range(61, 66):
     trade_info = {
             'tg_account' : '036',
-            'id': i,
+            'id': '036' + '_' + str(i),
             'card_number': 123456789,
             'source': 'bebz',
-            'paymethod': 3547,
+            'paymethod': 443,
             'fio': 'bez',
             'amount': 100,
             'comment': '',
-            'type': 'SBER',
+            'type': 'TINK',
             'status': 'trade_created',
         }    
     a = requests.post(URL_DJANGO + 'create/kf/trade/', json=trade_info)

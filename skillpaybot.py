@@ -23,7 +23,7 @@ paymethod = {
 def init_database():
     con = sqlite3.connect("message.db")
     cur = con.cursor()
-    cur.execute("""CREATE TABLE IF NOT EXISTS messages (u_id INT, msg_id INT, trade_id INT, type CHAR)""")
+    cur.execute("""CREATE TABLE IF NOT EXISTS messages (u_id INT, msg_id INT, trade_id CHAR, type CHAR)""")
     con.commit()
     con.close()
 

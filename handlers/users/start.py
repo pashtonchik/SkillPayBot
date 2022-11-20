@@ -558,11 +558,27 @@ async def other_case_cancel(message: types.Message, state=FSMContext):
         cancel_trade(JWT, id)
         data = {
             'id': str(id),
-            'status': 'canceled',
+            'status': 'cancel_by_operator',
+            'comment' : message.text
         }
 
         update_status = requests.post(URL_DJANGO + 'update/gar/trade/', json=data)
-        await message.reply('Заявка отменена.')
+        
+        get_current_info = requests.get(URL_DJANGO + f'gartrade/detail/{id}/')
+
+        await message.reply(f'''
+Заявка: {get_current_info.json()['gar_trade']['platform_id']}
+Инструмент: {paymethod[get_current_info.json()['gar_trade']['paymethod']]}
+–––
+Сумма: `{get_current_info.json()['gar_trade']['amount']}` 
+–––
+Адресат: `{get_current_info.json()['gar_trade']['card_number']}`
+–––
+Статус: *заявка отменена из-за проблемы отправки*
+
+            ''', parse_mode='Markdown')
+    
+
     elif (state_data['type'] == 'kf'):
         data = {
             'id': str(id),

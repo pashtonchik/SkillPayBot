@@ -857,7 +857,7 @@ async def get_photo(message: types.Message, state=FSMContext):
 Заявка: GAR — {id}
 Инструмент: {trade_detail['gar_trade']['paymethod']}
 –––
-Сумма: `{trade_detail['gar_trade']['currency_amount']}` 
+Сумма: `{trade_detail['gar_trade']['amount']}` 
 –––
 Адресат: `{trade_detail['gar_trade']['details']}`
 –––

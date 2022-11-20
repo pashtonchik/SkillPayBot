@@ -126,7 +126,7 @@ async def check_trades(dp):
     while 1:
         # try:
         req_django = requests.get(URL_DJANGO + 'trades/active/')
-        # print(req_django.status_code)
+        print(req_django.json())
         if req_django.status_code == 200:
             trades = req_django.json()
             # print(trades)

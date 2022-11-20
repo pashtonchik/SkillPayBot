@@ -253,7 +253,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
             if url_type in ['gar', 'pay', 'kf', 'bz']:
 
                 get_pay_info = requests.get(URL_DJANGO + f'{url_type}/trade/detail/{trade_id}/')
-
+                print(get_pay_info)
                 if (not get_pay_info.json()[trade_type]['agent'] or str(
                         get_pay_info.json()[trade_type]['agent']) == str(
                     call.from_user.id)) and \

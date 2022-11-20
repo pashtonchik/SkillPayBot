@@ -564,7 +564,7 @@ async def other_case_cancel(message: types.Message, state=FSMContext):
 
         update_status = requests.post(URL_DJANGO + 'update/gar/trade/', json=data)
         
-        get_current_info = requests.get(URL_DJANGO + f'gartrade/detail/{id}/')
+        get_current_info = requests.get(URL_DJANGO + f'gar/trade/detail/{id}/')
 
         await message.reply(f'''
 Заявка: {get_current_info.json()['gar_trade']['platform_id']}

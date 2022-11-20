@@ -16,20 +16,20 @@ URL_DJANGO = 'http://194.58.92.160:8000/api/'
 #         'status': 'trade_created',
 #     }
 
-# for i in range(61, 66):
-trade_info = {
-        'tg_account' : '036',
-        'id': '036' + '-' + '3' ,
-        'card_number': 123456789,
-        'source': 'bebz',
-        'paymethod': 443,
-        'fio': 'bez',
-        'amount': 100,
-        'comment': '',
-        'type': 'TINK',
-        'status': 'trade_created',
-    }    
-a = requests.post(URL_DJANGO + 'create/kf/trade/', json=trade_info)
+for i in range(1, 10):
+    trade_info = {
+            'tg_account' : '036',
+            'id': '036' + '-' + str(i),
+            'card_number': 123456789,
+            'source': 'bebz',
+            'paymethod': 443,
+            'fio': 'bez',
+            'amount': 100,
+            'comment': '',
+            'type': 'TINK',
+            'status': 'trade_created',
+        }    
+    a = requests.post(URL_DJANGO + 'create/kf/trade/', json=trade_info)
 # res_delete = {
 #                 'id' : [1,2,3],
 #                 'tg_id' : 1893883161

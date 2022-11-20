@@ -859,7 +859,7 @@ async def get_photo(message: types.Message, state=FSMContext):
 –––
 Сумма: `{trade_detail['gar_trade']['amount']}` 
 –––
-Адресат: `{trade_detail['gar_trade']['details']}`
+Адресат: `{trade_detail['gar_trade']['card_number']}`
 –––
 Статус: *Производится проверка чека!*
 

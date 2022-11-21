@@ -141,14 +141,10 @@ async def check_trades(dp):
                     message = await bot.send_message(int(operator), create_message_text(trade), \
                                                      reply_markup=kb_accept_order, parse_mode='Markdown')
                     add_to_database(message.chat.id, message.message_id, trade['data']['id'], trade['type'])
-                    print(trade['data']['id'])
         trades = select_trades_from_database('kf')
         for trade in trades:
-            print(trade)
             trade = trade[0]
             tradeDetail = requests.get(URL_DJANGO + f'kf/trade/detail/{trade}/')
-
-            print(tradeDetail.status_code, tradeDetail.json())
 
             if tradeDetail.status_code == 200:
                 tradeDetail = tradeDetail.json()

@@ -594,7 +594,7 @@ async def other_case_cancel(message: types.Message, state=FSMContext):
         key = get_current_info.json()['user']['key']
         proxy = get_current_info.json()['user']['proxy']
         email = get_current_info.json()['user']['email']
-        send_message = f'https://bitzlato.bz/api/p2p/trade/{id}/chat/'
+        send_message = f'https://bitzlato.net/api/p2p/trade/{id}/chat/'
         headers = authorization(key, email)
         data_message = {
             'message': f'{message.text}.',
@@ -608,7 +608,7 @@ async def other_case_cancel(message: types.Message, state=FSMContext):
         data_cancel = {
             'type': "cancel"
         }
-        adv_requests = requests.post(f'https://bitzlato.bz/api/p2p/trade/{id}', headers=header,
+        adv_requests = requests.post(f'https://bitzlato.net/api/p2p/trade/{id}', headers=header,
                                  proxies=proxy, json=data_cancel)
 
         await message.reply(f'''
@@ -654,7 +654,7 @@ async def get_photo(message: types.Message, state=FSMContext):
             }
             upload = requests.post(URL_DJANGO + 'update/bz/trade/', json=data)
 
-            send_message = f'https://bitzlato.bz/api/p2p/trade/{id}/chat/'
+            send_message = f'https://bitzlato.net/api/p2p/trade/{id}/chat/'
             headers = authorization(key, email)
             data_message = {
                 'message': 'Оплатил.',
@@ -663,7 +663,7 @@ async def get_photo(message: types.Message, state=FSMContext):
                 }
             }
             send_message_req = requests.post(send_message, headers=headers, proxies=proxy, json=data_message)
-            url = f'https://bitzlato.bz/api/p2p/trade/{id}/chat/sendfile'
+            url = f'https://bitzlato.net/api/p2p/trade/{id}/chat/sendfile'
 
             data = {
                 'mime_type': 'image/png',
@@ -685,7 +685,7 @@ async def get_photo(message: types.Message, state=FSMContext):
                 'type': 'payment'
             }
 
-            url = f'https://bitzlato.bz/api2/p2p/trade/{id}'
+            url = f'https://bitzlato.net/api2/p2p/trade/{id}'
 
             await bot.delete_message(chat_id=message.from_user.id, message_id=msg_id)
             msg = await message.reply(text=f'''

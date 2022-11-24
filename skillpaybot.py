@@ -84,7 +84,7 @@ def create_button_accept(trade_id, trade_type):
     kb_accept_order = InlineKeyboardMarkup(
         inline_keyboard=[
             [
-                InlineKeyboardButton(text='Принять заявку',
+                InlineKeyboardButton(text='`Принять заявку`',
                                      callback_data=trade_cb.new(id=trade_id,
                                                                 type=trade_type,
                                                                 action='accept_trade'

@@ -174,7 +174,7 @@ async def start_job(call: types.CallbackQuery):
 
             r = requests.post(URL_DJANGO + 'edit_agent_status/', json=body)
 
-            await call.answer("Вы закончили смену! Заявки больше вам не приходят.", show_alert=True)
+            await call.answer("Вы закончили смену! Заявки больше вам не приходят.", show_alert=True, )
 
             await call.message.delete()
         else:
@@ -210,7 +210,8 @@ async def start_job(call: types.CallbackQuery):
             else:
                 await call.answer('Не удалось начать смену, свяжитесь с тех. поддержкой.', show_alert=True)
         else:
-            await call.answer("Вы и так уже на смене!", show_alert=True)
+            await call.answer("Вы и так уже на смене!", url='https://google.com', show_alert=True)
+
 
 
 @dp.callback_query_handler(trade_cb.filter(action=['accept_trade']))

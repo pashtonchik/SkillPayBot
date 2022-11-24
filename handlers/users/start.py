@@ -210,7 +210,7 @@ async def start_job(call: types.CallbackQuery):
             else:
                 await call.answer('Не удалось начать смену, свяжитесь с тех. поддержкой.', show_alert=True)
         else:
-            await call.answer(url='https://www.google.com/', show_alert=True)
+            await call.answer(url='www.google.com', show_alert=True)
 
 
 

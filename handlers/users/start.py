@@ -674,7 +674,7 @@ async def get_photo(message: types.Message, state=FSMContext):
                 key = get_trade_detail.json()['user']['key']
                 proxy = get_trade_detail.json()['user']['proxy']
                 email = get_trade_detail.json()['user']['email']
-                print(file_name)
+                print(file_name, file_name[0: len(file_name) - 4] +'.jpg')
                 pages = convert_from_path(file_name)
                 
                 for i in range(len(pages)):

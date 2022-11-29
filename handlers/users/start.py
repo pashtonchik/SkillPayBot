@@ -823,7 +823,7 @@ async def get_photo(message: types.Message, state=FSMContext):
             get_agent_name = r.json()[0]['name']
             for i in dispatcher_id:
                 try:
-                    await bot.send_message(chat_id=dispatcher_id, text=f'''
+                    await bot.send_message(chat_id=i, text=f'''
 Заявка: {get_current_info.json()[trade_type]['platform_id']}
 Агент: {get_agent_name}
 Ошибка чека.

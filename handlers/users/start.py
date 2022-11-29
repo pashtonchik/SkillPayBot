@@ -704,7 +704,7 @@ async def get_photo(message: types.Message, state=FSMContext):
                     req = requests.get(URL_DJANGO + f'{url_type}/trade/detail/{id}/')
                     if req.status_code == 200:
                         trade_info = req.json()
-                        if trade_info[trade_type]['status'] == 'confirm_payment':
+                        if trade_info[trade_type]['status'] == 'confirm_payment' or trade_info[trade_type]['status'] == 'completed':
                             body = {
                                 'tg_id': message.from_user.id,
                                 'options': {

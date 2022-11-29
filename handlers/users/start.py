@@ -587,7 +587,6 @@ async def get_photo(message: types.Message, state=FSMContext):
     data = await state.get_data()
     trade_type = data['trade_type']
     url_type = data['url_type']
-    print(data)
     id = data['id']
     msg_id = data['message_id']
     file_name = f'/root/prod/SkillPay-Django/{url_type}/{id}_{message.from_user.id}.pdf'
@@ -634,14 +633,41 @@ async def get_photo(message: types.Message, state=FSMContext):
             mas = text.replace('-', '').split()
             print(text)
             print(''.join(text.split()[2:4]), text.split()[10], text.split()[20][1:],  get_current_info.json()[trade_type]['card_number'][12:16])
+        amount = ''
+        status = ''
+        card_number = ''
+        if paymethod[get_current_info.json()[trade_type]['paymethod']] == 'TINK':
+            if int(get_current_info.json()[trade_type]['amount']) < 1000:
+                amount = ''.join(text.split()[2])
+                status = text.split()[9]
+                card_number = text.split()[19][1:]
+            elif int(get_current_info.json()[trade_type]['amount']) >= 1000 and int(get_current_info.json()[trade_type]['amount']) < 1_000_000:
+                amount = ''.join(text.split()[2:4])
+                status = text.split()[10]
+                card_number = text.split()[20][1:]
+            elif int(get_current_info.json()[trade_type]['amount']) >= 1_000_000:
+                amount = ''.join(text.split()[2:5])
+                status = text.split()[11]
+                card_number = text.split()[21][1:]
+        elif paymethod[get_current_info.json()[trade_type]['paymethod']] == 'SBER':
+            if int(get_current_info.json()[trade_type]['amount']) < 1000:
+                amount = ''.join(mas[33])
+                card_number = mas[29]
+            elif int(get_current_info.json()[trade_type]['amount']) >= 1000 and int(get_current_info.json()[trade_type]['amount']) < 1_000_000:
+                amount = ''.join(mas[33:35])
+                card_number = mas[30]
+            elif int(get_current_info.json()[trade_type]['amount']) >= 1_000_000:
+                amount = ''.join(mas[33:36])
+                card_number = mas[31]
+
         if ((paymethod[get_current_info.json()[trade_type]['paymethod']] == 'TINK' and 
-            ''.join(text.split()[2:4]) == get_current_info.json()[trade_type]['amount'] and 
-            text.split()[10] == 'Успешно' and
-            text.split()[20][1:] == get_current_info.json()[trade_type]['card_number'][12:16])
+            amount == get_current_info.json()[trade_type]['amount'] and 
+            status == 'Успешно' and
+            card_number == get_current_info.json()[trade_type]['card_number'][12:16])
             or 
             (paymethod[get_current_info.json()[trade_type]['paymethod']] == 'SBER' and 
-            ''.join(mas[33:35]) == get_current_info.json()[trade_type]['amount'] and 
-            mas[30] == get_current_info.json()[trade_type]['card_number'][12:16])):
+            amount == get_current_info.json()[trade_type]['amount'] and 
+            card_number == get_current_info.json()[trade_type]['card_number'][12:16])):
 
             if url_type == 'bz':
                 get_trade_detail = requests.get(URL_DJANGO + f'{url_type}/trade/detail/{id}/')

@@ -822,12 +822,14 @@ async def get_photo(message: types.Message, state=FSMContext):
             r = requests.post(URL_DJANGO + 'get_agent_info/', json=body)
             get_agent_name = r.json()[0]['name']
             for i in dispatcher_id:
-                await bot.send_message(chat_id=dispatcher_id, text=f'''
+                try:
+                    await bot.send_message(chat_id=dispatcher_id, text=f'''
 Заявка: {get_current_info.json()[trade_type]['platform_id']}
 Агент: {get_agent_name}
 Ошибка чека.
                 ''')
-
+                except Exception as e:
+                    print(e)
             msg = await bot.edit_message_text(chat_id=message.from_user.id, message_id=msg.message_id,
                                                             text=f'''
 Заявка: {get_current_info.json()[trade_type]['platform_id']}

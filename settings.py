@@ -1,3 +1,6 @@
 URL_DJANGO = 'http://194.58.92.160:8000/api/'
 URL_BZ = 'https://bitzlato.bz/'
-cheques_base = '/root/dev/SkillPay-Django/kf_checks/'
+cheques_kf = '/root/prod/SkillPay-Django/kf/'
+cheques_bz = '/root/prod/SkillPay-Django/bz/'
+cheques_gar = '/root/prod/SkillPay-Django/gar/'
+cheques_pay = '/root/prod/SkillPay-Django/pay/'

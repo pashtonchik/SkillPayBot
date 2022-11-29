@@ -435,11 +435,12 @@ async def check_card(message: types.Message, state=FSMContext):
 
     get_current_info = requests.get(URL_DJANGO + f'{url_type}/trade/detail/{id}/')
 
+    try:
+        await bot.delete_message(message.chat.id, msg_id)
+    except Exception as e:
+        print(e)
+    
     if (get_current_info.json()[trade_type]['card_number'] == message.text):
-        try:
-            await bot.delete_message(message.chat.id, msg_id)
-        except Exception as e:
-            print(e)
         await message.reply(f'''
 Заявка: {get_current_info.json()[trade_type]['platform_id']}
 Инструмент: {paymethod[get_current_info.json()[trade_type]['paymethod']]}
@@ -648,7 +649,6 @@ async def get_photo(message: types.Message, state=FSMContext):
         }
     }
 
-
     if message.content_type == 'document' and message.document.file_name[-3:] == 'pdf':
         await message.document.download(destination_file=file_name)
         data = {
@@ -814,6 +814,20 @@ async def get_photo(message: types.Message, state=FSMContext):
                     print(e)
                     continue
         else:
+            get_dispatchers = requests.get(URL_DJANGO + 'api/get/dispatchers/')
+            dispatcher_id = get_dispatchers.json()
+            body = {
+                'tg_id': message.from_user.id
+            }
+            r = requests.post(URL_DJANGO + 'get_agent_info/', json=body)
+            get_agent_name = r.json()[0]['name']
+            for i in dispatcher_id:
+                await bot.send_message(chat_id=dispatcher_id, text=f'''
+Заявка: {get_current_info.json()[trade_type]['platform_id']}
+Агент: {get_agent_name}
+Ошибка чека.
+                ''')
+
             msg = await bot.edit_message_text(chat_id=message.from_user.id, message_id=msg.message_id,
                                                             text=f'''
 Заявка: {get_current_info.json()[trade_type]['platform_id']}

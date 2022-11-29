@@ -631,11 +631,11 @@ async def get_photo(message: types.Message, state=FSMContext):
             text = page1.extractText()
             mas = text.replace('-', '').split()
             print(text)
-            print(''.join(text.split()[2:4]), text.split()[10], text.split()[20],  get_current_info.json()[trade_type]['card_number'][12:16])
+            print(''.join(text.split()[2:4]), text.split()[10], text.split()[20][1:],  get_current_info.json()[trade_type]['card_number'][12:16])
         if ((paymethod[get_current_info.json()[trade_type]['paymethod']] == 'TINK' and 
             ''.join(text.split()[2:4]) == get_current_info.json()[trade_type]['amount'] and 
             text.split()[10] == 'Успешно' and
-            text.split()[20] == get_current_info.json()[trade_type]['card_number'][12:16])
+            text.split()[20][1:] == get_current_info.json()[trade_type]['card_number'][12:16])
             or 
             (paymethod[get_current_info.json()[trade_type]['paymethod']] == 'SBER' and 
             ''.join(mas[33:35]) == get_current_info.json()[trade_type]['amount'] and 

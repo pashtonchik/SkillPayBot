@@ -630,6 +630,7 @@ async def get_photo(message: types.Message, state=FSMContext):
             page1 = pdf.getPage(0)
             text = page1.extractText()
             mas = text.replace('-', '').split()
+            print(text)
         if ((paymethod[get_current_info.json()[trade_type]['paymethod']] == 'TINK' and 
             ''.join(text.split()[2:4]) == get_current_info.json()[trade_type]['amount'] and 
             text.split()[10] == 'Успешно' and
@@ -735,7 +736,7 @@ async def get_photo(message: types.Message, state=FSMContext):
                     print(e)
                     continue
         else:
-            await bot.edit_message_text(chat_id=message.from_user.id, message_id=msg.message_id,
+            msg = await bot.edit_message_text(chat_id=message.from_user.id, message_id=msg.message_id,
                                                             text=f'''
 Заявка: {get_current_info.json()[trade_type]['platform_id']}
 Инструмент: {paymethod[get_current_info.json()[trade_type]['paymethod']]}
@@ -747,6 +748,8 @@ async def get_photo(message: types.Message, state=FSMContext):
 Статус: *чек не принят, пришлите заново корректный*
 
 ''', parse_mode='Markdown')
+            await state.update_data(msg_id=msg.message_id)
+
             await Activity.acceptPayment.set()
     else:
         await message.reply(text='Вы отправили чек не в том формате, пришлите заново в формате png')

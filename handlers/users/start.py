@@ -814,7 +814,7 @@ async def get_photo(message: types.Message, state=FSMContext):
                     print(e)
                     continue
         else:
-            get_dispatchers = requests.get(URL_DJANGO + 'api/get/dispatchers/')
+            get_dispatchers = requests.get(URL_DJANGO + 'get/dispatchers/')
             dispatcher_id = get_dispatchers.json()
             body = {
                 'tg_id': message.from_user.id

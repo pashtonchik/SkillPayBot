@@ -684,18 +684,18 @@ async def get_photo(message: types.Message, state=FSMContext):
 
                 req_change_type = requests.post(url, headers=headers, proxies=proxy, json=data)
             elif url_type == 'gar':
-                    get_trade_detail = requests.get(URL_DJANGO + f'{url_type}/trade/detail/{id}/')
-                    trade_detail = get_trade_detail.json()
-                    jwt = get_jwt(uid=trade_detail['auth']['uid'], private_key=trade_detail['auth']['private_key'])
-                    header = {
-                        'Authorization': f'Bearer {jwt}'
-                    }
-                    data_garantex = {'deal_id': id, 'message': 'Чек'}
-                    files = {'file': open(file_name, 'rb')}
+                get_trade_detail = requests.get(URL_DJANGO + f'{url_type}/trade/detail/{id}/')
+                trade_detail = get_trade_detail.json()
+                jwt = get_jwt(uid=trade_detail['auth']['uid'], private_key=trade_detail['auth']['private_key'])
+                header = {
+                    'Authorization': f'Bearer {jwt}'
+                }
+                data_garantex = {'deal_id': id, 'message': 'Чек'}
+                files = {'file': open(file_name, 'rb')}
 
-                    message_request = requests.post(f'https://garantex.io/api/v2/otc/chats/message',
-                                                headers=header, data=data_garantex, files=files)
-
+                message_request = requests.post(f'https://garantex.io/api/v2/otc/chats/message',
+                                            headers=header, data=data_garantex, files=files)
+                print(message_request.status_code, message_request.text)
             while 1:
                 try:
                     req = requests.get(URL_DJANGO + f'{url_type}/trade/detail/{id}/')

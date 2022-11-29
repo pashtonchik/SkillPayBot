@@ -510,7 +510,7 @@ async def other_case_cancel(call: types.CallbackQuery, callback_data=dict, state
 Статус: *отправьте комментарий проблемы отправки*
 
 ''', parse_mode='Markdown')
-    await state.update_data(id=callback_data['id'], type=callback_data['type'], msg_id=msg.message_id)
+    await state.update_data(id=callback_data['id'], type=callback_data['type'], message_id=msg.message_id)
     await Activity.add_reason_cancel.set()
 
 
@@ -557,7 +557,7 @@ async def no_balance_cancel(call: types.CallbackQuery, callback_data=dict, state
 @dp.message_handler(state=Activity.add_reason_cancel)
 async def other_case_cancel(message: types.Message, state=FSMContext):
     state_data = await state.get_data()
-    await bot.delete_message(message.chat.id, state_data['msg_id'])
+    await bot.delete_message(message.chat.id, state_data['message_id'])
     id = state_data['id']
     reason = message.text
     body = {
@@ -842,7 +842,7 @@ async def get_photo(message: types.Message, state=FSMContext):
 Статус: *чек не принят, пришлите заново корректный*
 
 ''', parse_mode='Markdown')
-            await state.update_data(msg_id=msg.message_id)
+            await state.update_data(message_id=msg.message_id)
 
             await Activity.acceptPayment.set()
     else:

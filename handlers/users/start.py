@@ -464,7 +464,7 @@ async def check_card(message: types.Message, state=FSMContext):
 –––
 Статус: *некорректные реквизиты, введите снова*
 
-    ''')
+    ''', parse_mode='Markdown')
 
 
 @dp.callback_query_handler(trade_cb.filter(action=['cancel_payment']), state=Activity.acceptPayment)

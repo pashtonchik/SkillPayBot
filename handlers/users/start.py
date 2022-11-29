@@ -218,6 +218,8 @@ async def start_job(call: types.CallbackQuery):
 
 @dp.callback_query_handler(trade_cb.filter(action=['accept_trade']))
 async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSMContext):
+    
+    
     data = await state.get_data()
     print('[DATA]', data)
     trade_id = callback_data['id']
@@ -226,10 +228,13 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
     }
 
     r = requests.post(URL_DJANGO + 'get_agent_info/', json=body)
-    if r.status_code == 200:
-        if r.json()[0]['is_working_now'] == False:
+    
+    
 
-            print(callback_data)
+
+    if r.status_code == 200:
+        if r.json()[0]['is_working_now'] == False and r.json()[0]['active_card']:
+
             data = {
                 'id': str(trade_id),
                 'agent': str(call.from_user.id)
@@ -326,7 +331,8 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
                 else:
                     await call.answer('Заявка уже в работе.', show_alert=True)
                     await call.message.delete()
-
+        else:
+            await call.answer('У вас нет активной карточки! Свяжитесь с диспетчером.', show_alert=True)
             
 
 @dp.callback_query_handler(trade_cb.filter(action=['back_to_trade']), state=Activity.acceptPayment)
@@ -392,7 +398,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
 –––
 Адресат: {get_current_info.json()[trade_type]['card_number']}
 –––
-Статус: *заявка за вами, оплачиваем и присылаем чек*
+Статус: *заявка за вами, пришлите номер карточки в чат, чтобы продолжить. оплачиваем и присылаем чек*
 
     ''', reply_markup=kb_accept_cancel_payment, parse_mode='Markdown')
                     if (url_type == 'kf'):
@@ -416,6 +422,48 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
         else:
             await call.answer('Заявка уже в работе.', show_alert=True)
             await call.message.delete()
+
+@dp.message_handler(state=Activity.check_card)
+async def check_card(message: types.Message, state=FSMContext):
+    data = await state.get_data()
+    id = data['id']
+    msg_id = data['message_id']
+    trade_type = data['trade_type']
+    url_type = data['url_type']
+    type = data['type']
+    kb_accept_cancel_payment = create_accept_cancel_kb(id, type)
+
+    get_current_info = requests.get(URL_DJANGO + f'{url_type}/trade/detail/{id}/')
+
+    if (get_current_info.json()[trade_type]['card_number'] == message.text):
+        try:
+            await bot.delete_message(message.chat.id, msg_id)
+        except Exception as e:
+            print(e)
+        await message.reply(f'''
+Заявка: {get_current_info.json()[trade_type]['platform_id']}
+Инструмент: {paymethod[get_current_info.json()[trade_type]['paymethod']]}
+–––
+Сумма: `{get_current_info.json()[trade_type]['amount']}` 
+–––
+Адресат: {get_current_info.json()[trade_type]['card_number']}
+–––
+Статус: *заявка за вами, оплачиваем и присылаем чек*
+
+    ''', reply_markup=kb_accept_cancel_payment, parse_mode='Markdown')
+        await Activity.acceptPayment.set()
+    else:
+        await message.reply(f'''
+Заявка: {get_current_info.json()[trade_type]['platform_id']}
+Инструмент: {paymethod[get_current_info.json()[trade_type]['paymethod']]}
+–––
+Сумма: `{get_current_info.json()[trade_type]['amount']}` 
+–––
+Адресат: {get_current_info.json()[trade_type]['card_number']}
+–––
+Статус: *некорректные реквизиты, введите снова*
+
+    ''')
 
 
 @dp.callback_query_handler(trade_cb.filter(action=['cancel_payment']), state=Activity.acceptPayment)

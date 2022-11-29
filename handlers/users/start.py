@@ -304,9 +304,9 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
 –––
 Адресат: {get_current_info.json()[trade_type]['card_number']}
 –––
-Статус: *заявка за вами, оплачиваем и присылаем чек*
+Статус: *заявка за вами, пришлите номер карточки в чат, чтобы продолжить.*
 
-            ''', reply_markup=kb_accept_cancel_payment, parse_mode='Markdown')
+            ''', parse_mode='Markdown')
                             if url_type == 'kf':
                                 type = 'kf'
                             elif url_type == 'gar':
@@ -319,7 +319,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
                             await state.update_data(id=trade_id, type=type, message_id=msg.message_id,
                                                     url_type=url_type, trade_type=trade_type)
                             print('[DATA]', await state.get_data())
-                            await Activity.acceptPayment.set()
+                            await Activity.check_card.set()
 
                         except Exception as e:
                             print(e)
@@ -398,7 +398,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
 –––
 Адресат: {get_current_info.json()[trade_type]['card_number']}
 –––
-Статус: *заявка за вами, пришлите номер карточки в чат, чтобы продолжить. оплачиваем и присылаем чек*
+Статус: *заявка за вами, оплачиваем и присылаем чек*
 
     ''', reply_markup=kb_accept_cancel_payment, parse_mode='Markdown')
                     if (url_type == 'kf'):

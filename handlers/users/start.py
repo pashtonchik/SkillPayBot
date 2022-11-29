@@ -557,7 +557,10 @@ async def no_balance_cancel(call: types.CallbackQuery, callback_data=dict, state
 @dp.message_handler(state=Activity.add_reason_cancel)
 async def other_case_cancel(message: types.Message, state=FSMContext):
     state_data = await state.get_data()
-    await bot.delete_message(message.chat.id, state_data['message_id'])
+    try:
+        await bot.delete_message(message.chat.id, state_data['message_id'])
+    except Exception as e:
+        print(e)
     id = state_data['id']
     reason = message.text
     body = {
@@ -657,8 +660,11 @@ async def get_photo(message: types.Message, state=FSMContext):
             }
 
         upload = requests.post(URL_DJANGO + f'update/{url_type}/trade/', json=data)
+        try:
+            await bot.delete_message(chat_id=message.from_user.id, message_id=msg_id)
+        except Exception as e:
+            print(e)
 
-        await bot.delete_message(chat_id=message.from_user.id, message_id=msg_id)
         msg = await message.reply(text=f'''
 Заявка: {get_current_info.json()[trade_type]['platform_id']}
 Инструмент: {paymethod[get_current_info.json()[trade_type]['paymethod']]}

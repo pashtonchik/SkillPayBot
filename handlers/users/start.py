@@ -440,8 +440,6 @@ async def accept_cancel(call: types.CallbackQuery, callback_data=dict, state=FSM
 ''',
                                  reply_markup=create_yes_no_kb(callback_data['id'], callback_data['type']),
                                  parse_mode='Markdown')
-    await state.update_data(id=id, type=type, message_id=msg.message_id, url_type=url_type,
-                                            trade_type=trade_type)
 
 @dp.callback_query_handler(trade_cb.filter(action=['other_reason']), state=Activity.acceptPayment)
 async def other_case_cancel(call: types.CallbackQuery, callback_data=dict, state=FSMContext):
@@ -477,6 +475,11 @@ async def no_balance_cancel(call: types.CallbackQuery, callback_data=dict, state
             'is_instead': False,
         }
     }
+    data = await state.get_data()
+
+    trade_type = data['trade_type']
+    url_type = data['url_type']
+
     change_status_agent = requests.post(URL_DJANGO + 'edit_agent_status/', json=body)
     data = {
         'id': str(id),
@@ -484,9 +487,6 @@ async def no_balance_cancel(call: types.CallbackQuery, callback_data=dict, state
         'agent': None,
     }
     
-    trade_type = data['trade_type']
-    url_type = data['url_type']
-
     update_status = requests.post(URL_DJANGO + f'update/{url_type}/trade/', json=data)
     get_current_info = requests.get(URL_DJANGO + f'{url_type}/trade/detail/{id}/')
 

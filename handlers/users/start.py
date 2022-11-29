@@ -680,7 +680,7 @@ async def get_photo(message: types.Message, state=FSMContext):
                 for i in range(len(pages)):
 
                     pages[i].save(file_name[0: len(file_name) - 4] +'.jpg', 'JPEG')
-
+                file_name = file_name[0: len(file_name) - 4] +'.jpg'
                 send_message = f'https://bitzlato.net/api/p2p/trade/{id}/chat/'
                 headers = authorization(key, email)
                 data_message = {

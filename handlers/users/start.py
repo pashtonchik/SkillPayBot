@@ -421,13 +421,14 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
 @dp.callback_query_handler(trade_cb.filter(action=['cancel_payment']), state=Activity.acceptPayment)
 async def accept_cancel(call: types.CallbackQuery, callback_data=dict, state=FSMContext):
     data = await state.get_data()
+    id = data['id']
     print(data)
     trade_type = data['trade_type']
     url_type = data['url_type']
 
-    get_current_info = requests.get(URL_DJANGO + f'{url_type}/trade/detail/{data["id"]}/')
+    get_current_info = requests.get(URL_DJANGO + f'{url_type}/trade/detail/{id}/')
 
-    await call.message.edit_text(f'''
+    msg = await call.message.edit_text(f'''
 Заявка: {get_current_info.json()[trade_type]['platform_id']}
 Инструмент: {paymethod[get_current_info.json()[trade_type]['paymethod']]}
 –––
@@ -439,7 +440,8 @@ async def accept_cancel(call: types.CallbackQuery, callback_data=dict, state=FSM
 ''',
                                  reply_markup=create_yes_no_kb(callback_data['id'], callback_data['type']),
                                  parse_mode='Markdown')
-
+    await state.update_data(id=id, type=type, message_id=msg.message_id, url_type=url_type,
+                                            trade_type=trade_type)
 
 @dp.callback_query_handler(trade_cb.filter(action=['other_reason']), state=Activity.acceptPayment)
 async def other_case_cancel(call: types.CallbackQuery, callback_data=dict, state=FSMContext):

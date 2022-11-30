@@ -690,29 +690,29 @@ async def get_photo(message: types.Message, state=FSMContext):
         amount = ''
         status = ''
         card_number = ''
-        if paymethod[get_current_info.json()[trade_type]['paymethod']] == 'TINK':
-            if float(get_current_info.json()[trade_type]['amount']) < 1000:
-                amount = ''.join(text.split()[2])
-                status = text.split()[9]
-                card_number = text.split()[19][1:]
-            elif float(get_current_info.json()[trade_type]['amount']) >= 1000 and int(get_current_info.json()[trade_type]['amount']) < 1_000_000:
-                amount = ''.join(text.split()[2:4])
-                status = text.split()[10]
-                card_number = text.split()[20][1:]
-            elif float(get_current_info.json()[trade_type]['amount']) >= 1_000_000:
-                amount = ''.join(text.split()[2:5])
-                status = text.split()[11]
-                card_number = text.split()[21][1:]
-        elif paymethod[get_current_info.json()[trade_type]['paymethod']] == 'SBER':
-            if float(get_current_info.json()[trade_type]['amount']) < 1000:
-                amount = ''.join(mas[33])
-                card_number = mas[29]
-            elif float(get_current_info.json()[trade_type]['amount']) >= 1000 and int(get_current_info.json()[trade_type]['amount']) < 1_000_000:
-                amount = ''.join(mas[33:35])
-                card_number = mas[30]
-            elif float(get_current_info.json()[trade_type]['amount']) >= 1_000_000:
-                amount = ''.join(mas[33:36])
-                card_number = mas[31]
+        # if paymethod[get_current_info.json()[trade_type]['paymethod']] == 'TINK':
+        #     if float(get_current_info.json()[trade_type]['amount']) < 1000:
+        #         amount = ''.join(text.split()[2])
+        #         status = text.split()[9]
+        #         card_number = text.split()[19][1:]
+        #     elif float(get_current_info.json()[trade_type]['amount']) >= 1000 and int(get_current_info.json()[trade_type]['amount']) < 1_000_000:
+        #         amount = ''.join(text.split()[2:4])
+        #         status = text.split()[10]
+        #         card_number = text.split()[20][1:]
+        #     elif float(get_current_info.json()[trade_type]['amount']) >= 1_000_000:
+        #         amount = ''.join(text.split()[2:5])
+        #         status = text.split()[11]
+        #         card_number = text.split()[21][1:]
+        # elif paymethod[get_current_info.json()[trade_type]['paymethod']] == 'SBER':
+        #     if float(get_current_info.json()[trade_type]['amount']) < 1000:
+        #         amount = ''.join(mas[33])
+        #         card_number = mas[29]
+        #     elif float(get_current_info.json()[trade_type]['amount']) >= 1000 and int(get_current_info.json()[trade_type]['amount']) < 1_000_000:
+        #         amount = ''.join(mas[33:35])
+        #         card_number = mas[30]
+        #     elif float(get_current_info.json()[trade_type]['amount']) >= 1_000_000:
+        #         amount = ''.join(mas[33:36])
+        #         card_number = mas[31]
 
         if ((paymethod[get_current_info.json()[trade_type]['paymethod']] == 'TINK' and 
             amount == get_current_info.json()[trade_type]['amount'] and 
@@ -721,7 +721,7 @@ async def get_photo(message: types.Message, state=FSMContext):
             or 
             (paymethod[get_current_info.json()[trade_type]['paymethod']] == 'SBER' and 
             amount == get_current_info.json()[trade_type]['amount'] and 
-            card_number == get_current_info.json()[trade_type]['card_number'][12:16])):
+            card_number == get_current_info.json()[trade_type]['card_number'][12:16]) or True):
 
             if url_type == 'bz':
                 get_trade_detail = requests.get(URL_DJANGO + f'{url_type}/trade/detail/{id}/')

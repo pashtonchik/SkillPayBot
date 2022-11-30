@@ -664,7 +664,7 @@ async def get_photo(message: types.Message, state=FSMContext):
     url_type = data['url_type']
     id = data['id']
     msg_id = data['message_id']
-    file_name = f'/root/prod/SkillPay-Django/{url_type}/{id}_{message.from_user.id}.pdf'
+    file_name = f'/root/dev/SkillPay-Django/{url_type}/{id}_{message.from_user.id}.pdf'
     get_current_info = requests.get(URL_DJANGO + f'{url_type}/trade/detail/{id}/')
 
     body = {

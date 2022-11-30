@@ -171,7 +171,7 @@ async def check_trades(dp):
                 data = select_data_from_database(trade_id=trade, type='bz')
                 text = edited_message_text(tradeDetail['bz'])
                 if tradeDetail['bz']['agent'] or tradeDetail['bz']['status'] == 'closed' or \
-                    tradeDetail['bz']['status'] == 'time_cancel':
+                    tradeDetail['bz']['status'] == 'time_cancel' or tradeDetail['bz']['status'] == 'cancel':
                     for userId, msgId in data:
                         try:
                             if str(tradeDetail['bz']['agent']) != str(userId):

@@ -111,6 +111,13 @@ def authorization(key, email_bz):
     return {'Authorization': "Bearer " + token}
 
 
+
+@dp.message_handler(text='/reset', state='*')
+async def reset(message: types.Message, state=FSMContext):
+    await message.answer('Бот перезапущен, срочно обратитесь к диспетчеру, если была заявка в работе')
+    await state.finish()
+
+
 @dp.message_handler(CommandStart())
 async def bot_start(message: types.Message):
     body = {
@@ -266,7 +273,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
                         get_pay_info.json()[trade_type]['agent']) == str(
                     call.from_user.id)) and \
                         get_pay_info.json()[trade_type]['status'] != 'closed' and get_pay_info.json()[trade_type][
-                    'status'] != 'time_cancel' and get_pay_info.json()[trade_type]['status'] != 'cancel' and 
+                    'status'] != 'time_cancel' and get_pay_info.json()[trade_type]['status'] != 'cancel' and \
                     get_pay_info.json()[trade_type]['status'] != 'canceled':
 
                     set_agent_trade = requests.post(URL_DJANGO + f'update/{url_type}/trade/', json=data)
@@ -864,11 +871,4 @@ async def get_photo(message: types.Message, state=FSMContext):
 @dp.callback_query_handler(text='Назад')
 async def back(call: types.CallbackQuery):
     await call.message.edit_text('Меню', reply_markup=kb_menu_main)
-
-
-
-@dp.message_handler(text='/reset', state='*')
-async def reset(message: types.Message, state=FSMContext):
-    await message.answer('Бот перезапущен, срочно обратитесь к диспетчеру, если была заявка в работе')
-    await state.finish()
 

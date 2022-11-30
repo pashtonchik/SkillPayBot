@@ -266,7 +266,8 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
                         get_pay_info.json()[trade_type]['agent']) == str(
                     call.from_user.id)) and \
                         get_pay_info.json()[trade_type]['status'] != 'closed' and get_pay_info.json()[trade_type][
-                    'status'] != 'time_cancel' and get_pay_info.json()[trade_type]['status'] != 'cancel':
+                    'status'] != 'time_cancel' and get_pay_info.json()[trade_type]['status'] != 'cancel' and 
+                    get_pay_info.json()[trade_type]['status'] != 'canceled':
 
                     set_agent_trade = requests.post(URL_DJANGO + f'update/{url_type}/trade/', json=data)
 

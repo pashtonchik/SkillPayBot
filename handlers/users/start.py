@@ -114,6 +114,21 @@ def authorization(key, email_bz):
 
 @dp.message_handler(text='/reset', state='*')
 async def reset(message: types.Message, state=FSMContext):
+    get_dispatchers = requests.get(URL_DJANGO + 'get/dispatchers/')
+    dispatcher_id = get_dispatchers.json()
+    body = {
+        'tg_id': message.from_user.id
+    }
+    r = requests.post(URL_DJANGO + 'get_agent_info/', json=body)
+    get_agent_name = r.json()[0]['name']
+    for i in dispatcher_id:
+        try:
+            await bot.send_message(chat_id=i, text=f'''
+Агент: {get_agent_name}
+Использовал /reset.
+                ''')
+        except Exception as e:
+            print(e)
     await message.answer('Бот перезапущен, срочно обратитесь к диспетчеру, если была заявка в работе')
     await state.finish()
 

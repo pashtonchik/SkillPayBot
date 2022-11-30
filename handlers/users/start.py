@@ -743,7 +743,7 @@ async def get_photo(message: types.Message, state=FSMContext):
                         'message': 'string'
                     }
                 }
-                send_message_req = requests.post(send_message, headers=headers, proxies=proxy, json=data_message)
+                # send_message_req = requests.post(send_message, headers=headers, proxies=proxy, json=data_message)
                 url = f'https://bitzlato.net/api/p2p/trade/{id}/chat/sendfile'
 
                 data = {
@@ -774,7 +774,7 @@ async def get_photo(message: types.Message, state=FSMContext):
                 header = {
                     'Authorization': f'Bearer {jwt}'
                 }
-                data_garantex = {'deal_id': id, 'message': 'Чек'}
+                data_garantex = {'deal_id': id}
                 files = {'file': open(file_name, 'rb')}
 
                 message_request = requests.post(f'https://garantex.io/api/v2/otc/chats/message',

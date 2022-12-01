@@ -120,7 +120,7 @@ async def reset(message: types.Message, state=FSMContext):
         'tg_id': message.from_user.id
     }
     r = requests.post(URL_DJANGO + 'get_agent_info/', json=body)
-    get_agent_name = r.json()[0]['name']
+    get_agent_name = r.json()[0]['user_name']
     for i in dispatcher_id:
         try:
             await bot.send_message(chat_id=i, text=f'''
@@ -848,7 +848,7 @@ async def get_photo(message: types.Message, state=FSMContext):
                 'tg_id': message.from_user.id
             }
             r = requests.post(URL_DJANGO + 'get_agent_info/', json=body)
-            get_agent_name = r.json()[0]['name']
+            get_agent_name = r.json()[0]['user_name']
             for i in dispatcher_id:
                 try:
                     await bot.send_message(chat_id=i, text=f'''

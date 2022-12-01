@@ -219,24 +219,27 @@ async def start_job(call: types.CallbackQuery):
     data = json.loads(r.text)[0]
 
     if r.status_code == 200:
-        if not data['is_instead']:
-            body = {
-                'tg_id': call.from_user.id,
-                'options': {
-                    'is_working_now': False,
-                    'is_instead': True,
+        if data['active_card']:
+            if not data['is_instead']:
+                body = {
+                    'tg_id': call.from_user.id,
+                    'options': {
+                        'is_working_now': False,
+                        'is_instead': True,
+                    }
                 }
-            }
 
-            r = requests.post(URL_DJANGO + 'edit_agent_status/', json=body)
+                r = requests.post(URL_DJANGO + 'edit_agent_status/', json=body)
 
-            if r.status_code == 200:
-                await call.answer("Вы начали смену! Ожидайте заявки.", show_alert=True)
+                if r.status_code == 200:
+                    await call.answer("Вы начали смену! Ожидайте заявки.", show_alert=True)
+                else:
+                    await call.answer('Не удалось начать смену, свяжитесь с тех. поддержкой.', show_alert=True)
             else:
-                await call.answer('Не удалось начать смену, свяжитесь с тех. поддержкой.', show_alert=True)
+                await call.answer("Вы и так уже на смене!", show_alert=True)
         else:
-            await call.answer("Вы и так уже на смене!", show_alert=True)
-
+            call.answer("У вас нет активной карточки! Свяжитесь с диспетчером.", show_alert=True)
+        
 
 @dp.callback_query_handler(trade_cb.filter(action=['accept_trade']))
 async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSMContext):
@@ -355,7 +358,10 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
                     await call.answer('Заявка уже в работе.', show_alert=True)
                     await call.message.delete()
         else:
-            await call.answer('У вас нет активной карточки! Свяжитесь с диспетчером.', show_alert=True)
+            if r.json()[0]['is_working_now'] == True:
+                await call.answer('У вас уже есть активная сделка, выполните её.', show_alert=True)
+            elif not r.json()[0]['active_card']:
+                await call.answer('У вас нет активной карточки! Свяжитесь с диспетчером.', show_alert=True)
             
 
 @dp.callback_query_handler(trade_cb.filter(action=['back_to_trade']), state=Activity.acceptPayment)

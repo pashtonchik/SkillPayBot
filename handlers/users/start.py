@@ -238,7 +238,7 @@ async def start_job(call: types.CallbackQuery):
             else:
                 await call.answer("Вы и так уже на смене!", show_alert=True)
         else:
-            call.answer("У вас нет активной карточки! Свяжитесь с диспетчером.", show_alert=True)
+            await call.answer("У вас нет активной карточки! Свяжитесь с диспетчером.", show_alert=True)
         
 
 @dp.callback_query_handler(trade_cb.filter(action=['accept_trade']))

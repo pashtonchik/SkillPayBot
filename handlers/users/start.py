@@ -326,8 +326,6 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
 Заявка: {get_current_info.json()[trade_type]['platform_id']}
 Инструмент: {paymethod[get_current_info.json()[trade_type]['paymethod']]}
 –––
-Сумма: `{get_current_info.json()[trade_type]['amount']}` 
-–––
 Адресат: {get_current_info.json()[trade_type]['card_number']}
 –––
 Статус: *заявка за вами, пришлите номер карточки в чат, чтобы продолжить.*
@@ -486,8 +484,6 @@ async def check_card(message: types.Message, state=FSMContext):
         await message.reply(f'''
 Заявка: {get_current_info.json()[trade_type]['platform_id']}
 Инструмент: {paymethod[get_current_info.json()[trade_type]['paymethod']]}
-–––
-Сумма: `{get_current_info.json()[trade_type]['amount']}` 
 –––
 Адресат: {get_current_info.json()[trade_type]['card_number']}
 –––
@@ -733,7 +729,7 @@ async def get_photo(message: types.Message, state=FSMContext):
         amount = get_current_info.json()[trade_type]['amount'].replace('.`', ',')
         if ((paymethod[get_current_info.json()[trade_type]['paymethod']] == 'TINK' and 
             amount == get_current_info.json()[trade_type]['amount'] and 
-            'Успешно' in status and
+            'Успешно' in status  and
             card_number in get_current_info.json()[trade_type]['card_number'])
             or 
             (paymethod[get_current_info.json()[trade_type]['paymethod']] == 'SBER' and 

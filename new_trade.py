@@ -1,6 +1,6 @@
 import requests
 
-URL_DJANGO = 'http://194.58.92.160:8000/api/'
+URL_DJANGO = 'http://194.58.92.160:8001/api/'
 
 
 # trade_info = {
@@ -16,20 +16,21 @@ URL_DJANGO = 'http://194.58.92.160:8000/api/'
 #         'status': 'trade_created',
 #     }
 
-for i in range(40, 50):
+for i in range(91, 92):
     trade_info = {
             'tg_account' : '036',
             'id': '036' + '-' + str(i),
-            'card_number': 123456789,
-            'source': 'bebz',
+            'card_number': "5536914018025316",
+            'source': 'TEST',
             'paymethod': 443,
-            'fio': 'bez',
-            'amount': 100,
+            'fio': 'TEST',
+            'amount': 12500,
             'comment': '',
             'type': 'TINK',
             'status': 'trade_created',
         }    
     a = requests.post(URL_DJANGO + 'create/kf/trade/', json=trade_info)
+    print(a.status_code, a.text)
 # res_delete = {
 #                 'id' : [1,2,3],
 #                 'tg_id' : 1893883161

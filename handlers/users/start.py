@@ -716,15 +716,17 @@ async def get_photo(message: types.Message, state=FSMContext):
         status = ''
         card_number = ''
         text = text.split('\n')
-        
-        if paymethod[get_current_info.json()[trade_type]['paymethod']] == 'TINK':
-            amount = re.sub('[,]', '.', re.sub('[^0-9,]', '', text[1]))
-            status = text[4].split()[1]
-            card_number = re.sub('[^0-9]', '', text[7])
-        elif paymethod[get_current_info.json()[trade_type]['paymethod']] == 'SBER':
-            amount = re.sub('[,]', '.', re.sub('[^0-9,]', '', text[14]))
-            card_number = re.sub('[^0-9]', '', text[8])
-
+        try:
+            if get_current_info.json()['validate_check']:
+                if paymethod[get_current_info.json()[trade_type]['paymethod']] == 'TINK':
+                    amount = re.sub('[,]', '.', re.sub('[^0-9,]', '', text[1]))
+                    status = text[4].split()[1]
+                    card_number = re.sub('[^0-9]', '', text[7])
+                elif paymethod[get_current_info.json()[trade_type]['paymethod']] == 'SBER':
+                    amount = re.sub('[,]', '.', re.sub('[^0-9,]', '', text[14]))
+                    card_number = re.sub('[^0-9]', '', text[8])
+        except Exception as e:
+            print(e)
 
         amount = get_current_info.json()[trade_type]['amount'].replace('.`', ',')
         if ((paymethod[get_current_info.json()[trade_type]['paymethod']] == 'TINK' and 

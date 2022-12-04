@@ -32,6 +32,9 @@ from skillpaybot import select_message_from_database, delete_from_database, paym
 trade_cb = CallbackData("trade", "type", "id", "action")
 
 
+channel_id = -1001747067594
+
+
 def create_accept_cancel_kb(trade_id, trade_type):
     kb_accept_payment = InlineKeyboardMarkup(
         inline_keyboard=[
@@ -829,6 +832,27 @@ async def get_photo(message: types.Message, state=FSMContext):
 Статус: *успешно оплачена и закрыта*
 
                     ''', parse_mode='Markdown')
+                                data = {
+                                    "tg_id" : message.from_user.id
+                                }
+
+                                req = requests.get(URL_DJANGO + 'get_agent_info/')
+                                agent = ''
+                                if (req.status_code == 200):
+                                    agent = req.json()['user_name']
+
+                                await bot.send_message(channel_id=channel_id, text=f"""
+Заявка: {get_current_info.json()[trade_type]['platform_id']}
+Инструмент: {paymethod[get_current_info.json()[trade_type]['paymethod']]}
+–––
+Сумма: `{get_current_info.json()[trade_type]['amount']}` 
+–––
+Адресат: {get_current_info.json()[trade_type]['card_number']}
+–––
+Оператор: {agent}
+–––
+Статус: *успешно оплачена и закрыта*
+                                """, parse_mode='Markdown')
                             else:
                                 await message.answer('Произошла ошибка, свяжитесь с админом.')
 

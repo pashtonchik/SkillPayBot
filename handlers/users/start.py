@@ -841,7 +841,7 @@ async def get_photo(message: types.Message, state=FSMContext):
                                 if (req.status_code == 200):
                                     agent = req.json()['user_name']
 
-                                await bot.send_message(channel_id=channel_id, text=f"""
+                                await bot.send_message(chat_id=channel_id, text=f"""
 Заявка: {get_current_info.json()[trade_type]['platform_id']}
 Инструмент: {paymethod[get_current_info.json()[trade_type]['paymethod']]}
 –––

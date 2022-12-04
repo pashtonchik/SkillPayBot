@@ -839,7 +839,7 @@ async def get_photo(message: types.Message, state=FSMContext):
                                 req = requests.post(URL_DJANGO + 'get_agent_info/')
                                 agent = ''
                                 if (req.status_code == 200):
-                                    agent = req.json()['user_name']
+                                    agent = req.json()[0]['user_name']
 
                                 await bot.send_message(chat_id=channel_id, text=f"""
 Заявка: {get_current_info.json()[trade_type]['platform_id']}

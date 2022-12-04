@@ -836,7 +836,7 @@ async def get_photo(message: types.Message, state=FSMContext):
                                     "tg_id" : message.from_user.id
                                 }
 
-                                req = requests.get(URL_DJANGO + 'get_agent_info/')
+                                req = requests.post(URL_DJANGO + 'get_agent_info/')
                                 agent = ''
                                 if (req.status_code == 200):
                                     agent = req.json()['user_name']

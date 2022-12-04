@@ -735,7 +735,7 @@ async def get_photo(message: types.Message, state=FSMContext):
             print('ERROR CHECK', e)
         print(amount, status, card_number, get_current_info.json()['validate_check'])
 
-        amount = get_current_info.json()[trade_type]['amount'].replace('.`', ',')
+        
         if ((paymethod[get_current_info.json()[trade_type]['paymethod']] == 'TINK' and 
             amount == get_current_info.json()[trade_type]['amount'] and 
             'Успешно' in status  and

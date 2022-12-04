@@ -730,7 +730,8 @@ async def get_photo(message: types.Message, state=FSMContext):
                     card_number = re.sub('[^0-9]', '', text[8])
         except Exception as e:
             print('ERROR CHECK', e)
-
+        print(amount, status, card_number, get_current_info.json()['validate_check'])
+        
         amount = get_current_info.json()[trade_type]['amount'].replace('.`', ',')
         if ((paymethod[get_current_info.json()[trade_type]['paymethod']] == 'TINK' and 
             amount == get_current_info.json()[trade_type]['amount'] and 
@@ -847,13 +848,13 @@ async def get_photo(message: types.Message, state=FSMContext):
 Заявка: {get_current_info.json()[trade_type]['platform_id']}
 Инструмент: {paymethod[get_current_info.json()[trade_type]['paymethod']]}
 –––
-Сумма: `{get_current_info.json()[trade_type]['amount']}` 
+Сумма: {get_current_info.json()[trade_type]['amount']} 
 –––
 Адресат: {get_current_info.json()[trade_type]['card_number']}
 –––
 Оператор: {agent}
 –––
-Статус: *успешно оплачена и закрыта*
+Статус: успешно оплачена и закрыта
                                 """)
                             else:
                                 await message.answer('Произошла ошибка, свяжитесь с админом.')

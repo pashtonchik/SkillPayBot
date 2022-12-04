@@ -832,11 +832,13 @@ async def get_photo(message: types.Message, state=FSMContext):
 Статус: *успешно оплачена и закрыта*
 
                     ''', parse_mode='Markdown')
+                                
                                 data = {
                                     "tg_id" : message.from_user.id
                                 }
 
                                 req = requests.post(URL_DJANGO + 'get_agent_info/', json=data)
+                                print(req, req.json())
                                 agent = ''
                                 if (req.status_code == 200):
                                     agent = req.json()[0]['user_name']

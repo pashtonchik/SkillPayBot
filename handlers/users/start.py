@@ -729,7 +729,7 @@ async def get_photo(message: types.Message, state=FSMContext):
                     amount = re.sub('[,]', '.', re.sub('[^0-9,]', '', text[14]))
                     card_number = re.sub('[^0-9]', '', text[8])
         except Exception as e:
-            print(e)
+            print('ERROR CHECK', e)
 
         amount = get_current_info.json()[trade_type]['amount'].replace('.`', ',')
         if ((paymethod[get_current_info.json()[trade_type]['paymethod']] == 'TINK' and 

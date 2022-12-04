@@ -854,7 +854,7 @@ async def get_photo(message: types.Message, state=FSMContext):
 Оператор: {agent}
 –––
 Статус: *успешно оплачена и закрыта*
-                                """, parse_mode='Markdown')
+                                """)
                             else:
                                 await message.answer('Произошла ошибка, свяжитесь с админом.')
 

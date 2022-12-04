@@ -836,11 +836,10 @@ async def get_photo(message: types.Message, state=FSMContext):
                                     "tg_id" : message.from_user.id
                                 }
 
-                                req = requests.post(URL_DJANGO + 'get_agent_info/')
+                                req = requests.post(URL_DJANGO + 'get_agent_info/', json=data)
                                 agent = ''
                                 if (req.status_code == 200):
                                     agent = req.json()[0]['user_name']
-
                                 await bot.send_message(chat_id=channel_id, text=f"""
 Заявка: {get_current_info.json()[trade_type]['platform_id']}
 Инструмент: {paymethod[get_current_info.json()[trade_type]['paymethod']]}

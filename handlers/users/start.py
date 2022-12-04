@@ -471,7 +471,7 @@ async def check_card(message: types.Message, state=FSMContext):
         print(e)
     
     if (get_current_info.json()[trade_type]['card_number'] == message.text):
-        await message.reply(f'''
+        msg = await message.reply(f'''
 Заявка: {get_current_info.json()[trade_type]['platform_id']}
 Инструмент: {paymethod[get_current_info.json()[trade_type]['paymethod']]}
 –––
@@ -482,6 +482,8 @@ async def check_card(message: types.Message, state=FSMContext):
 Статус: *заявка за вами, оплачиваем и присылаем чек*
 
     ''', reply_markup=kb_accept_cancel_payment, parse_mode='Markdown')
+        await state.update_data(id=id, type=type, message_id=msg.message_id, url_type=url_type,
+                                            trade_type=trade_type)
         await Activity.acceptPayment.set()
     else:
         await message.reply(f'''
@@ -493,7 +495,8 @@ async def check_card(message: types.Message, state=FSMContext):
 Статус: *некорректные реквизиты, введите снова*
 
     ''', parse_mode='Markdown')
-
+    await state.update_data(id=id, type=type, message_id=msg.message_id, url_type=url_type,
+                                            trade_type=trade_type)
 
 @dp.callback_query_handler(trade_cb.filter(action=['cancel_payment']), state=Activity.acceptPayment)
 async def accept_cancel(call: types.CallbackQuery, callback_data=dict, state=FSMContext):
@@ -731,7 +734,7 @@ async def get_photo(message: types.Message, state=FSMContext):
         except Exception as e:
             print('ERROR CHECK', e)
         print(amount, status, card_number, get_current_info.json()['validate_check'])
-        
+
         amount = get_current_info.json()[trade_type]['amount'].replace('.`', ',')
         if ((paymethod[get_current_info.json()[trade_type]['paymethod']] == 'TINK' and 
             amount == get_current_info.json()[trade_type]['amount'] and 

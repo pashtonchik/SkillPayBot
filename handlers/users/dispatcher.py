@@ -2,14 +2,14 @@ from aiogram import types
 from aiogram.dispatcher.storage import FSMContext
 from keyboards.inline.ikb import confirm_kb, create_ikb
 from loader import dp, bot
-from settings import django_url
+from settings import URL_DJANGO
 from states.dispatcher_states import DispatcherCashin, DispatcherCashOut
 from aiogram.utils.exceptions import ChatNotFound
 import requests
 
 
 async def notifiy_couriers(text, amount, card_number=None, operator_name=None):
-    r = requests.get(django_url + 'courier/').json()
+    r = requests.get(URL_DJANGO + 'courier/').json()
     text_message = f'{text}\nСумма:{amount}'
     if operator_name:
         text_message += f'\nОператор: {operator_name} \nКарта: {card_number}'
@@ -26,7 +26,7 @@ async def notifiy_couriers(text, amount, card_number=None, operator_name=None):
 
 @dp.callback_query_handler(text='dis_operators', state=None)
 async def print_operators(callback_query: types.CallbackQuery):
-    req = requests.get(django_url+'operators/')
+    req = requests.get(URL_DJANGO+'operators/')
     if req.status_code != 200:
         await callback_query.message.answer(f'Ошибка соединения с серверов\nкод ошибки: {req.status_code}')
     else:
@@ -56,7 +56,7 @@ async def input_amount_dispatcher_cashout(message: types.Message, state: FSMCont
             await state.finish()
             await message.answer('Операция отменена')
         else:
-            operators = requests.get(django_url+'operators/').json()
+            operators = requests.get(URL_DJANGO+'operators/').json()
             print(operators)
             lables = [i['user_name'] for i in operators]
             callbacks = [i['tg_id'] for i in operators]
@@ -74,9 +74,9 @@ async def input_amount_dispatcher_cashout(message: types.Message, state: FSMCont
 async def input_amount_courier_cashin(call: types.CallbackQuery, state: FSMContext):
     state_data = await state.get_data()
     try:
-        req = requests.get(url=django_url + f'user/{call.from_user.id}/')
+        req = requests.get(url=URL_DJANGO + f'user/{call.from_user.id}/')
         if req.status_code == 200:
-            cards = requests.get(django_url + f'operator/{call.data[4:]}/cards/').json()
+            cards = requests.get(URL_DJANGO + f'operator/{call.data[4:]}/cards/').json()
             lables = [i['card_number'] for i in cards]
             callbacks = [i['id'] for i in cards]
             ikb = create_ikb(lables, callbacks)
@@ -110,9 +110,9 @@ async def select_operator_cashin_dispatcher(callback_query: types.CallbackQuery,
     else:
         # try:
         print(callback_query.data[4:])
-        operator_req = requests.get(django_url + f'operators/{state_data["operator"]}/')
-        cards_operators_req = requests.get(django_url + f'operator/{state_data["operator"]}/cards/')
-        card_req = requests.get(django_url + f'get/card/{callback_query.data[4:]}/')
+        operator_req = requests.get(URL_DJANGO + f'operators/{state_data["operator"]}/')
+        cards_operators_req = requests.get(URL_DJANGO + f'operator/{state_data["operator"]}/cards/')
+        card_req = requests.get(URL_DJANGO + f'get/card/{callback_query.data[4:]}/')
         if operator_req.status_code != 200:
             raise Exception(
                 f'req status code: {operator_req.status_code }')

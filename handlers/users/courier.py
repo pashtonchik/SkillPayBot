@@ -2,14 +2,14 @@ from aiogram import types
 from aiogram.dispatcher.storage import FSMContext
 from keyboards.inline.ikb import confirm_kb, create_ikb
 from loader import dp, bot
-from settings import django_url
+from settings import URL_DJANGO
 from states.courier_stases import CourierCashin, CourierCashOut
 from aiogram.utils.exceptions import ChatNotFound
 import requests
 
 
 async def notifiy_dispatchers(text, courier, amount, operator_name=None):
-    r = requests.get(django_url + 'dispatcher/').json()
+    r = requests.get(URL_DJANGO + 'dispatcher/').json()
     text_message = f'{text}\nКурьер: {courier}\nСумма: {amount} Карта: {card_number}'
     if operator_name:
         text_message += f'\nОператор: {operator_name}'
@@ -40,11 +40,11 @@ async def input_amount_courier_cashin(message: types.Message, state: FSMContext)
             await state.finish()
             await message.answer('Операция отменена')
         else:
-            req = requests.get(url=django_url + f'user/{message.from_user.id}/')
+            req = requests.get(url=URL_DJANGO + f'user/{message.from_user.id}/')
             if req.status_code == 200:
                 account_balance = req.json()['account_balance']
                 if account_balance >= amount:
-                    operators = requests.get(django_url + 'operators/').json()
+                    operators = requests.get(URL_DJANGO + 'operators/').json()
                     lables = [i['user_name'] for i in operators]
                     callbacks = [i['tg_id'] for i in operators]
                     ikb = create_ikb(lables, callbacks)
@@ -66,9 +66,9 @@ async def input_amount_courier_cashin(message: types.Message, state: FSMContext)
 async def input_amount_courier_cashin(call: types.CallbackQuery, state: FSMContext):
     state_data = await state.get_data()
     try:
-        req = requests.get(url=django_url + f'user/{call.from_user.id}/')
+        req = requests.get(url=URL_DJANGO + f'user/{call.from_user.id}/')
         if req.status_code == 200:
-            cards = requests.get(django_url + f'operator/{call.data[4:]}/cards/').json()
+            cards = requests.get(URL_DJANGO + f'operator/{call.data[4:]}/cards/').json()
             lables = [i['card_number'] for i in cards]
             callbacks = [i['id'] for i in cards]
             ikb = create_ikb(lables, callbacks)

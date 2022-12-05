@@ -227,6 +227,13 @@ async def check_trades(dp):
                                     trade_id=trade['id'], type='gar_trade')
         await asyncio.sleep(1)
 
+async def set_default_commands(dp):
+    await dp.bot.set_my_commands([
+        types.BotCommand("start", "Меню SkillPay"),
+        types.BotCommand("help", "Помощь"),
+        types.BotCommand("cashin", " "),
+    ])
+
 async def on_startup(dispatcher):
     await set_default_commands(dispatcher)
     asyncio.create_task(check_trades(dp=dp))

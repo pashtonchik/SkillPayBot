@@ -2,13 +2,13 @@ import requests
 from aiogram import types
 from aiogram.dispatcher.filters.builtin import CommandStart
 from loader import dp
-from settings import django_url
+from settings import URL_DJANGO
 from keyboards.inline.ikb import courier_kb, dispatcher_kb
 
 
 @dp.message_handler(commands=['cashin'])
 async def bot_start(message: types.Message):
-    req = requests.get(url=django_url + f'user/{message.from_user.id}/')
+    req = requests.get(url=URL_DJANGO + f'user/{message.from_user.id}/')
     if req.status_code == 200:
         data = req.json()
         if data['type'] == 'courier':

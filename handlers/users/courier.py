@@ -102,8 +102,8 @@ async def select_operator_cashin(callback_query: types.CallbackQuery, state: FSM
         await state.finish()
     else:
         try:
-            operator_req = requests.get(django_url + f'operators/{state_data["operator"]}/')
-            cards_operators_req = requests.get(django_url + f'operator/{state_data["operator"]}/cards/')
+            operator_req = requests.get(URL_DJANGO + f'operators/{state_data["operator"]}/')
+            cards_operators_req = requests.get(URL_DJANGO + f'operator/{state_data["operator"]}/cards/')
             if operator_req.status_code != 200 or cards_operators_req.status_code != 200:
                 raise Exception(
                     f'req status code: {operator_req.status_code}')
@@ -138,7 +138,7 @@ async def select_operator_cashin(callback_query: types.CallbackQuery, state: FSM
 async def confirm_cashin(callback_query: types.CallbackQuery, state: FSMContext):
     data = await state.get_data()
     req = requests.post(
-        url=django_url + 'courier/cashin/',
+        url=URL_DJANGO + 'courier/cashin/',
         json={
             'tg_id': str(data['id']),
             'amount': data['amount'],
@@ -209,7 +209,7 @@ async def input_amount_courier_cashout(message: types.Message, state: FSMContext
 async def confirm_cashout(callback_query: types.CallbackQuery, state: FSMContext):
     data = await state.get_data()
     req = requests.post(
-        url=django_url + 'courier/cashout/',
+        url=URL_DJANGO + 'courier/cashout/',
         json={
             'tg_id': str(data['id']),
             'amount': data['amount'],

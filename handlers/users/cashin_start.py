@@ -7,20 +7,19 @@ from keyboards.inline.ikb import courier_kb, dispatcher_kb
 
 
 @dp.message_handler(commands=['cashin'])
-async def bot_start(message: types.Message):
-    await message.answer('Пока не работает, но скоро заработает')
-    # req = requests.get(url=URL_DJANGO + f'user/{message.from_user.id}/')
-    # if req.status_code == 200:
-    #     data = req.json()
-    #     if data['type'] == 'courier':
-    #         await message.answer(
-    #             f"Привет, {message.from_user.full_name}!\nРоль: курьер\nБаланс: {data['account_balance']}",
-    #             reply_markup=courier_kb,
-    #             )
-    #     elif data['type'] == 'dispatcher':
-    #         await message.answer(
-    #             f"Привет, {message.from_user.full_name}!\nРоль: диспетчер",
-    #             reply_markup=dispatcher_kb,
-    #         )
-    # else:
-    #     await message.reply('Вы не зарегистрированы!')
+async def send_cashin_menu(message: types.Message):
+    req = requests.get(url=URL_DJANGO + f'user/{message.chat.id}/')
+    if req.status_code == 200:
+        data = req.json()
+        if data['type'] == 'courier':
+            await message.answer(
+                f"CASHIN\nРоль: курьер\nБаланс: {data['account_balance']}",
+                reply_markup=courier_kb,
+                )
+        elif data['type'] == 'dispatcher':
+            await message.answer(
+                f"CASHIN\nРоль: диспетчер",
+                reply_markup=dispatcher_kb,
+            )
+    else:
+        await message.reply(f'Вы не зарегистрированы!')

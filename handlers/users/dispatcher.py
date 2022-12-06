@@ -1,11 +1,14 @@
 from aiogram import types
 from aiogram.dispatcher.storage import FSMContext
-from keyboards.inline.ikb import confirm_kb, create_ikb
+from keyboards.inline.ikb import confirm_kb, create_ikb, cancel_cb
 from loader import dp, bot
 from settings import URL_DJANGO
 from states.dispatcher_states import DispatcherCashin, DispatcherCashOut
 from aiogram.utils.exceptions import ChatNotFound
 import requests
+from .courier import cancel_cb
+from .cashin_start import send_cashin_menu
+from aiogram.utils.exceptions import MessageToDeleteNotFound
 
 
 async def notifiy_couriers(text, amount, card_number=None, operator_name=None):
@@ -42,12 +45,18 @@ async def print_operators(callback_query: types.CallbackQuery):
 
 @dp.callback_query_handler(text='dis_cashin', state=None)
 async def use_cashin_button_dispatcher(callback_query: types.CallbackQuery, state: FSMContext):
-    await callback_query.message.answer('Введите колическов средств')
+    await callback_query.message.edit_text('Введите колическов средств', reply_markup=cancel_cb)
     await DispatcherCashin.input_amount.set()
+    await state.update_data({'msg':callback_query.message.message_id})
 
 
 @dp.message_handler(state=DispatcherCashin.input_amount)
 async def input_amount_dispatcher_cashout(message: types.Message, state: FSMContext):
+    state_data = await state.get_data()
+    try:
+        await bot.delete_message(message.chat.id, state_data['msg'])
+    except MessageToDeleteNotFound:
+        pass
     try:
         amount = float(message.text)
         if amount < 0:
@@ -55,9 +64,10 @@ async def input_amount_dispatcher_cashout(message: types.Message, state: FSMCont
         elif amount == 0:
             await state.finish()
             await message.answer('Операция отменена')
+            await send_cashin_menu(message)
         else:
             operators = requests.get(URL_DJANGO+'operators/').json()
-            print(operators)
+            # print(operators)
             lables = [i['user_name'] for i in operators]
             callbacks = [i['tg_id'] for i in operators]
             ikb = create_ikb(lables, callbacks)
@@ -73,28 +83,23 @@ async def input_amount_dispatcher_cashout(message: types.Message, state: FSMCont
 @dp.callback_query_handler(state=DispatcherCashin.choose_operator)
 async def input_amount_courier_cashin(call: types.CallbackQuery, state: FSMContext):
     state_data = await state.get_data()
-    try:
-        req = requests.get(url=URL_DJANGO + f'user/{call.from_user.id}/')
-        if req.status_code == 200:
-            cards = requests.get(URL_DJANGO + f'operator/{call.data[4:]}/cards/').json()
-            lables = [i['card_number'] for i in cards]
-            callbacks = [i['id'] for i in cards]
-            ikb = create_ikb(lables, callbacks)
-            msg = await call.message.edit_text(text='Выберите карту оператора', reply_markup=ikb)
-            await state.update_data(msg=msg.message_id,
-                                    id=msg.chat.id,
-                                    amount=state_data['amount'],
-                                    operator=call.data[4:],
-                                    )
-            print(call.data)
-            await DispatcherCashin.choose_card.set()
-        else:
-            await call.message.answer(f'Ошибка при отправке запроса на сервер\nкод ошибки: {req.status_code}')
-            await state.finish()
-
-    except ValueError:
-        await DispatcherCashin.input_amount.set()
-        await call.message.answer('Значение указанно не верно.\nЕсли вы хотите отменить кэшин введите 0')
+    req = requests.get(url=URL_DJANGO + f'user/{call.from_user.id}/')
+    if req.status_code == 200:
+        cards = requests.get(URL_DJANGO + f'operator/{call.data[4:]}/cards/').json()
+        lables = [i['card_number'] for i in cards]
+        callbacks = [i['id'] for i in cards]
+        ikb = create_ikb(lables, callbacks)
+        msg = await call.message.edit_text(text='Выберите карту оператора', reply_markup=ikb)
+        await state.update_data(msg=msg.message_id,
+                                id=msg.chat.id,
+                                amount=state_data['amount'],
+                                operator=call.data[4:],
+                                )
+        # print(call.data)
+        await DispatcherCashin.choose_card.set()
+    else:
+        await call.message.answer(f'Ошибка при отправке запроса на сервер\nкод ошибки: {req.status_code}')
+        await state.finish()
 
 
 @dp.callback_query_handler(lambda c: c.data.startswith('ikb_'), state=DispatcherCashin.choose_card)
@@ -109,7 +114,7 @@ async def select_operator_cashin_dispatcher(callback_query: types.CallbackQuery,
         await state.finish()
     else:
         # try:
-        print(callback_query.data[4:])
+        # print(callback_query.data[4:])
         operator_req = requests.get(URL_DJANGO + f'operators/{state_data["operator"]}/')
         cards_operators_req = requests.get(URL_DJANGO + f'operator/{state_data["operator"]}/cards/')
         card_req = requests.get(URL_DJANGO + f'get/card/{callback_query.data[4:]}/')
@@ -117,7 +122,6 @@ async def select_operator_cashin_dispatcher(callback_query: types.CallbackQuery,
             raise Exception(
                 f'req status code: {operator_req.status_code }')
         operator = operator_req.json()
-        print(card_req.status_code)
         card_number = card_req.json()['card_number']
 
         msg = await bot.edit_message_text(
@@ -152,17 +156,24 @@ async def confirm_cashout_dispatcher(callback_query: types.CallbackQuery, state:
         message_id=data['msg'],
         text=f'Операция: кэшин\nСумма: {data["amount"]}\nОператор: {data["operator_name"]}\n_________________________\nЗаявка отправлена курьерам.',
     )
+    await send_cashin_menu(callback_query.message)
     await state.finish()
 
 
 @dp.callback_query_handler(text='dis_cashout', state=None)
 async def use_cashout_button_dispatcher(callback_query: types.CallbackQuery, state: FSMContext):
     await DispatcherCashOut.input_amount.set()
-    await callback_query.message.answer(text='Введите количество средств, которое будет указано в заявке')
-
+    await callback_query.message.edit_text(text='Введите количество средств, которое будет указано в заявке', reply_markup=cancel_cb)
+    await state.update_data({'msg':callback_query.message.message_id})
+    
 
 @dp.message_handler(state=DispatcherCashOut.input_amount)
 async def input_amount_courier_cashout(message: types.Message, state: FSMContext):
+    state_data = await state.get_data()
+    try:
+        await bot.delete_message(message.chat.id, state_data['msg'])
+    except MessageToDeleteNotFound:
+        pass
     try:
         amount = float(message.text)
         if amount < 0:
@@ -170,6 +181,7 @@ async def input_amount_courier_cashout(message: types.Message, state: FSMContext
         elif amount == 0:
             await state.finish()
             await message.answer('Операция отменена')
+            await send_cashin_menu(message)
         else:
             msg = await message.answer(
                 text=f'Подтверждение операции:\n\nЗабор наличных стредств из Garantex\n{amount}',
@@ -181,6 +193,7 @@ async def input_amount_courier_cashout(message: types.Message, state: FSMContext
     except ValueError:
         await DispatcherCashOut.input_amount.set()
         await message.answer('Значение указанно не верно.\nЕсли вы хотите отменить операцию введите 0')
+        
 
 
 @dp.callback_query_handler(text='confirm', state=DispatcherCashOut.confirm)
@@ -195,5 +208,6 @@ async def confirm_cashout(callback_query: types.CallbackQuery, state: FSMContext
         message_id=data['msg'],
         text=f'Заявка о заборе наличных средств из Gatantex\n{data["amount"]}\n_________________________\nЗаявка отправлена курьерам.',
     )
+    await send_cashin_menu(callback_query.message)
     await state.finish()
 

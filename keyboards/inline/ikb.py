@@ -15,7 +15,7 @@ def create_ikb(names, callbacks):
     ikb.add(
         InlineKeyboardButton(
             text='отмена',
-            callback_data='ikb_cancel'
+            callback_data='ccancel'
         )
     )
     return ikb
@@ -39,5 +39,9 @@ dispatcher_kb = InlineKeyboardMarkup(inline_keyboard=[
 
 confirm_kb = InlineKeyboardMarkup().add(
     InlineKeyboardButton('подтвердить', callback_data='confirm'),
-    InlineKeyboardButton('отмена', callback_data='cancel'),
+    InlineKeyboardButton('отмена', callback_data='ccancel'),
+)
+
+cancel_cb = InlineKeyboardMarkup().add(
+    InlineKeyboardButton('отмена', callback_data='ccancel'),
 )

@@ -93,7 +93,7 @@ async def input_amount_courier_cashin(call: types.CallbackQuery, state: FSMConte
             await state.finish()
 
     except ValueError:
-        await CourierCashin.input_amount.set()
+        await DispatcherCashin.input_amount.set()
         await call.message.answer('Значение указанно не верно.\nЕсли вы хотите отменить кэшин введите 0')
 
 

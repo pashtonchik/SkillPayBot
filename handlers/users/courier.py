@@ -8,11 +8,11 @@ from aiogram.utils.exceptions import ChatNotFound
 import requests
 
 
-async def notifiy_couriers(text, amount, courier, card_number=None, operator_name=None):
+async def notify_dispatchers(text, amount, courier, card_number=None, operator_name=None):
     r = requests.get(URL_DJANGO + 'dispatcher/').json()
-    text_message = f'{text}\nКурьер: {courier}\nСумма: {amount} Карта: {card_number}'
+    text_message = f'{text}\nКурьер: {courier}\nСумма: {amount}'
     if operator_name:
-        text_message += f'\nОператор: {operator_name}'
+        text_message += f'\nОператор: {operator_name}\nКарта: {card_number}'
     if r:
         for dispatcher in r:
             try:

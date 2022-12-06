@@ -231,7 +231,7 @@ async def set_default_commands(dp):
     await dp.bot.set_my_commands([
         types.BotCommand("start", "Меню SkillPay"),
         types.BotCommand("help", "Помощь"),
-        types.BotCommand("cashin", " "),
+        types.BotCommand("cashin", "Для диспетчеров и курьеров"),
     ])
 
 async def on_startup(dispatcher):

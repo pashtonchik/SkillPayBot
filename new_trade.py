@@ -16,7 +16,7 @@ URL_DJANGO = 'http://194.58.92.160:8001/api/'
 #         'status': 'trade_created',
 #     }
 
-for i in range(94, 95):
+for i in range(95, 96):
     trade_info = {
             'tg_account' : '036',
             'id': '036' + '-' + str(i),
@@ -26,7 +26,7 @@ for i in range(94, 95):
             'fio': 'TEST',
             'amount': 12500,
             'comment': '',
-            'type': 'SBER',
+            'type': 'TINK',
             'status': 'trade_created',
         }    
     a = requests.post(URL_DJANGO + 'create/kf/trade/', json=trade_info)

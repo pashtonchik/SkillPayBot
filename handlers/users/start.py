@@ -685,12 +685,6 @@ async def get_photo(message: types.Message, state=FSMContext):
 
     if message.content_type == 'document' and message.document.file_name[-3:] == 'pdf':
         await message.document.download(destination_file=file_name)
-        data = {
-                'id': id,
-                'cheque': f'{url_type}/{id}_{message.from_user.id}.pdf'
-            }
-
-        upload = requests.post(URL_DJANGO + f'update/{url_type}/trade/', json=data)
         try:
             await bot.delete_message(chat_id=message.from_user.id, message_id=msg_id)
         except Exception as e:
@@ -736,15 +730,24 @@ async def get_photo(message: types.Message, state=FSMContext):
         print(amount, status, card_number, get_current_info.json()['validate_check'])
 
         
-        if ((paymethod[get_current_info.json()[trade_type]['paymethod']] == 'TINK' and 
-            amount == get_current_info.json()[trade_type]['amount'] and 
+        if (
+            (paymethod[get_current_info.json()[trade_type]['paymethod']] == 'TINK' and 
+            amount in get_current_info.json()[trade_type]['amount'] and 
             'Успешно' in status  and
             card_number in get_current_info.json()[trade_type]['card_number'])
             or 
             (paymethod[get_current_info.json()[trade_type]['paymethod']] == 'SBER' and 
-            amount == get_current_info.json()[trade_type]['amount'] and 
-            card_number in get_current_info.json()[trade_type]['card_number']) or not get_current_info.json()['validate_check']):
+            amount in get_current_info.json()[trade_type]['amount'] and 
+            card_number in get_current_info.json()[trade_type]['card_number']) 
+            
+            or not get_current_info.json()['validate_check']):
+            data = {
+                'id': id,
+                'cheque': f'{url_type}/{id}_{message.from_user.id}.pdf'
+            }
 
+            upload = requests.post(URL_DJANGO + f'update/{url_type}/trade/', json=data)
+            
             if url_type == 'bz':
                 get_trade_detail = requests.get(URL_DJANGO + f'{url_type}/trade/detail/{id}/')
                 key = get_trade_detail.json()['user']['key']

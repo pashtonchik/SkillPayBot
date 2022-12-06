@@ -37,7 +37,7 @@ async def print_operators(callback_query: types.CallbackQuery):
         if operators != []:
             answer_text = 'Cписок операторов:\n\n'
             for i in operators:
-                answer_text += f'{i["name"]}\n'
+                answer_text += f'{i["user_name"]}\n'
         else:
             answer_text = 'В базе нет операторов'
         await callback_query.message.answer(answer_text)

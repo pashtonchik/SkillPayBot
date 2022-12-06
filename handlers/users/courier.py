@@ -8,7 +8,7 @@ from aiogram.utils.exceptions import ChatNotFound
 import requests
 
 
-async def notifiy_dispatchers(text, courier, amount, operator_name=None):
+async def notifiy_couriers(text, amount, courier, card_number=None, operator_name=None):
     r = requests.get(URL_DJANGO + 'dispatcher/').json()
     text_message = f'{text}\nКурьер: {courier}\nСумма: {amount} Карта: {card_number}'
     if operator_name:
@@ -148,11 +148,12 @@ async def confirm_cashin(callback_query: types.CallbackQuery, state: FSMContext)
 
     )
     if req.status_code == 200:
-        await notifiy_dispatchers(
+        await notify_dispatchers(
             amount=data['amount'],
             courier=callback_query.from_user.full_name,
             operator_name=data['operator_name'],
             text=f'Уведомление\nПроизведена операция: кэшин',
+            card_number=data['card_number']
         )
 
         await bot.edit_message_text(
@@ -216,7 +217,7 @@ async def confirm_cashout(callback_query: types.CallbackQuery, state: FSMContext
         }
     )
     if req.status_code == 200:
-        await notifiy_dispatchers(
+        await notify_dispatchers(
             amount=data['amount'],
             courier=callback_query.from_user.full_name,
             text=f'Уведомление\nПроизведена операция: забор наличных средств с Garantex',

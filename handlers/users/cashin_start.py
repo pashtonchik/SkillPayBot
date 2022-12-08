@@ -29,7 +29,7 @@ from keyboards.inline.mainMenu import kb_menu_main, kb_menu_job
 @dp.message_handler(CommandStart())
 async def send_cashin_menu(message: types.Message):
     body = {
-        'tg_id': message.from_user.id
+        'tg_id': message.chat.id
     }
     r = requests.post(URL_DJANGO + 'get_agent_info/', json=body)
     if r.status_code == 200:

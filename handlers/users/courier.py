@@ -55,7 +55,7 @@ async def input_amount_courier_cashin(message: types.Message, state: FSMContext)
         else:
             req = requests.get(url=URL_DJANGO + f'user/{message.from_user.id}/')
             if req.status_code == 200:
-                account_balance = req.json()['account_balance']
+                account_balance = req.json()['balance_courier']
                 if account_balance >= amount:
                     operators = requests.get(URL_DJANGO + 'operators/').json()
                     lables = [i['user_name'] for i in operators]

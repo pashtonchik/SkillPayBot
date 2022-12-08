@@ -50,7 +50,7 @@ async def send_cashin_menu(message: types.Message):
             )
         elif data['role'] == 'courier':
             await message.answer(
-                f"CASHIN\nРоль: курьер\nБаланс: {data['account_balance']}",
+                f"CASHIN\nРоль: курьер\nБаланс: {data['balance_courier']}",
                 reply_markup=courier_kb,
                 )
         else:

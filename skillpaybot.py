@@ -124,114 +124,118 @@ def edited_message_text(trade):
 
 async def check_trades(dp):
     while 1:
-        # try:
-        req_django = requests.get(URL_DJANGO + 'trades/active/')
-        if req_django.status_code == 200:
-            trades = req_django.json()
-            # print(trades)
+        try:
+            req_django = requests.get(URL_DJANGO + 'trades/active/')
+            if req_django.status_code == 200:
+                trades = req_django.json()
+                # print(trades)
 
+                for trade in trades:
+
+                    operators = trade['recipients']
+                    kb_accept_order = create_button_accept(trade_id=trade['data']['id'],
+                                                        trade_type=trade['type'])
+                    for operator in operators:
+
+                        message = await bot.send_message(int(operator), create_message_text(trade), \
+                                                        reply_markup=kb_accept_order, parse_mode='Markdown')
+                        add_to_database(message.chat.id, message.message_id, trade['data']['id'], trade['type'])
+            trades = select_trades_from_database('kf')
             for trade in trades:
+                trade = trade[0]
+                tradeDetail = requests.get(URL_DJANGO + f'kf/trade/detail/{trade}/')
 
-                operators = trade['recipients']
-                kb_accept_order = create_button_accept(trade_id=trade['data']['id'],
-                                                       trade_type=trade['type'])
-                for operator in operators:
+                if tradeDetail.status_code == 200:
+                    tradeDetail = tradeDetail.json()
+                    data = select_data_from_database(trade_id=trade, type='kf')
+                    text = edited_message_text(tradeDetail['kftrade'])
+                    if tradeDetail['kftrade']['agent'] or tradeDetail['kftrade']['status'] == 'closed' or \
+                        tradeDetail['kftrade']['status'] == 'time_cancel':
+                        for userId, msgId in data:
+                            try:
+                                if str(tradeDetail['kftrade']['agent']) != str(userId):
+                                    await bot.delete_message(chat_id=userId, message_id=msgId)
+                            except Exception as e:
+                                print(e)
+                                continue
+                            finally:
+                                delete_from_database(userId, msgId, trade, 'kf')
 
-                    message = await bot.send_message(int(operator), create_message_text(trade), \
-                                                     reply_markup=kb_accept_order, parse_mode='Markdown')
-                    add_to_database(message.chat.id, message.message_id, trade['data']['id'], trade['type'])
-        trades = select_trades_from_database('kf')
-        for trade in trades:
-            trade = trade[0]
-            tradeDetail = requests.get(URL_DJANGO + f'kf/trade/detail/{trade}/')
+            trades = select_trades_from_database('bz')
+            for trade in trades:
+                trade = trade[0]
+                tradeDetail = requests.get(URL_DJANGO + f'bz/trade/detail/{trade}/')
 
-            if tradeDetail.status_code == 200:
-                tradeDetail = tradeDetail.json()
-                data = select_data_from_database(trade_id=trade, type='kf')
-                text = edited_message_text(tradeDetail['kftrade'])
-                if tradeDetail['kftrade']['agent'] or tradeDetail['kftrade']['status'] == 'closed' or \
-                    tradeDetail['kftrade']['status'] == 'time_cancel':
-                    for userId, msgId in data:
-                        try:
-                            if str(tradeDetail['kftrade']['agent']) != str(userId):
-                                await bot.delete_message(chat_id=userId, message_id=msgId)
-                        except Exception as e:
-                            print(e)
-                            continue
-                        finally:
-                            delete_from_database(userId, msgId, trade, 'kf')
+                if tradeDetail.status_code == 200:
+                    tradeDetail = tradeDetail.json()
+                    data = select_data_from_database(trade_id=trade, type='bz')
+                    text = edited_message_text(tradeDetail['bz'])
+                    if tradeDetail['bz']['agent'] or tradeDetail['bz']['status'] == 'closed' or \
+                        tradeDetail['bz']['status'] == 'time_cancel' or tradeDetail['bz']['status'] == 'cancel':
+                        for userId, msgId in data:
+                            try:
+                                if str(tradeDetail['bz']['agent']) != str(userId):
+                                    await bot.delete_message(chat_id=userId, message_id=msgId)
+                            except Exception as e:
+                                print(e)
+                                continue
+                            finally:
+                                delete_from_database(userId, msgId, trade, 'bz')
 
-        trades = select_trades_from_database('bz')
-        for trade in trades:
-            trade = trade[0]
-            tradeDetail = requests.get(URL_DJANGO + f'bz/trade/detail/{trade}/')
+            req_kftrades = requests.get(URL_DJANGO + 'get/free/kftrades/')
+            kf_trades = req_kftrades.json()
 
-            if tradeDetail.status_code == 200:
-                tradeDetail = tradeDetail.json()
-                data = select_data_from_database(trade_id=trade, type='bz')
-                text = edited_message_text(tradeDetail['bz'])
-                if tradeDetail['bz']['agent'] or tradeDetail['bz']['status'] == 'closed' or \
-                    tradeDetail['bz']['status'] == 'time_cancel' or tradeDetail['bz']['status'] == 'cancel':
-                    for userId, msgId in data:
-                        try:
-                            if str(tradeDetail['bz']['agent']) != str(userId):
-                                await bot.delete_message(chat_id=userId, message_id=msgId)
-                        except Exception as e:
-                            print(e)
-                            continue
-                        finally:
-                            delete_from_database(userId, msgId, trade, 'bz')
+            for trade in kf_trades:
+                time_add_kf = datetime.strptime(trade['date_create'].split('.')[0], "%Y-%m-%dT%H:%M:%S").timestamp()
+                time_now = datetime.now().timestamp()
+                if time_now - time_add_kf > int(trade['time_close']) * 60:
+                    data = {
+                        'id': trade['id'],
+                        'status': 'time_cancel',
+                    }
 
-        req_kftrades = requests.get(URL_DJANGO + 'get/free/kftrades/')
-        kf_trades = req_kftrades.json()
+                    update_status = requests.post(URL_DJANGO + 'update/kf/trade/', json=data)
 
-        for trade in kf_trades:
-            time_add_kf = datetime.strptime(trade['date_create'].split('.')[0], "%Y-%m-%dT%H:%M:%S").timestamp()
-            time_now = datetime.now().timestamp()
-            if time_now - time_add_kf > int(trade['time_close']) * 60:
-                data = {
-                    'id': trade['id'],
-                    'status': 'time_cancel',
-                }
-
-                update_status = requests.post(URL_DJANGO + 'update/kf/trade/', json=data)
-
-        gar_trades_db = select_trades_from_database('gar_trade')
-        if gar_trades_db:
-            gar_trades = [i[0] for i in gar_trades_db]
-            gar_trades = list(set(gar_trades))
-        else:
-            gar_trades = None
-        req = {
-            'gar_trade': gar_trades
-        }
-        if gar_trades:
-            gar_trades_data = requests.post(URL_DJANGO + 'get/active/trades/for/delete/', json=req)
-            status_code = gar_trades_data.status_code
-        else:
-            status_code = 0
-        if status_code == 200:
-            gar_trades_data = gar_trades_data.json()['gar_trade']
-            for trade in gar_trades_data:
-                msgs = select_data_from_database(trade['id'], 'gar_trade')
-                if trade['status'] in ['canceled', 'completed'] or trade['agent']:
-                    for userId, msgId in msgs:
-                        try:
-                            if str(userId) != str(trade['agent']):
-                                await bot.delete_message(userId, msgId)
-                        except MessageToDeleteNotFound:
-                            pass
-                        finally:
-                            delete_from_database(
-                                    u_id=userId, msg_id=msgId,
-                                    trade_id=trade['id'], type='gar_trade')
-        await asyncio.sleep(1)
+            gar_trades_db = select_trades_from_database('gar_trade')
+            if gar_trades_db:
+                gar_trades = [i[0] for i in gar_trades_db]
+                gar_trades = list(set(gar_trades))
+            else:
+                gar_trades = None
+            req = {
+                'gar_trade': gar_trades
+            }
+            if gar_trades:
+                gar_trades_data = requests.post(URL_DJANGO + 'get/active/trades/for/delete/', json=req)
+                status_code = gar_trades_data.status_code
+            else:
+                status_code = 0
+            if status_code == 200:
+                gar_trades_data = gar_trades_data.json()['gar_trade']
+                for trade in gar_trades_data:
+                    msgs = select_data_from_database(trade['id'], 'gar_trade')
+                    if trade['status'] in ['canceled', 'completed'] or trade['agent']:
+                        for userId, msgId in msgs:
+                            try:
+                                if str(userId) != str(trade['agent']):
+                                    await bot.delete_message(userId, msgId)
+                            except MessageToDeleteNotFound:
+                                pass
+                            finally:
+                                delete_from_database(
+                                        u_id=userId, msg_id=msgId,
+                                        trade_id=trade['id'], type='gar_trade')
+        except Exception as e:
+            print(e)
+            continue
+        finally:
+            await asyncio.sleep(1)
 
 async def set_default_commands(dp):
     await dp.bot.set_my_commands([
         types.BotCommand("start", "Меню SkillPay"),
         types.BotCommand("help", "Помощь"),
-        types.BotCommand("cashin", "Для диспетчеров и курьеров"),
+        # types.BotCommand("cashin", "Для диспетчеров и курьеров"),
     ])
 
 async def on_startup(dispatcher):

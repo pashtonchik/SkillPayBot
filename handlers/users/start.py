@@ -343,7 +343,9 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
                 await call.answer('У вас уже есть активная сделка, выполните её.', show_alert=True)
             elif not r.json()[0]['active_card']:
                 await call.answer('У вас нет активной карточки! Свяжитесь с диспетчером.', show_alert=True)
-            
+    else:
+        await call.answer('Заявки не существует.', show_alert=True)
+        await call.message.delete()     
 
 @dp.callback_query_handler(trade_cb.filter(action=['back_to_trade']), state=Activity.acceptPayment)
 async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSMContext):

@@ -268,73 +268,77 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
 
             if url_type in ['gar', 'pay', 'kf', 'bz']:
                 get_pay_info = requests.get(URL_DJANGO + f'{url_type}/trade/detail/{trade_id}/')
-                if ( get_pay_info.status_code == 200 and not get_pay_info.json()[trade_type]['agent'] or str(
-                        get_pay_info.json()[trade_type]['agent']) == str(
-                    call.from_user.id)) and \
-                        get_pay_info.json()[trade_type]['status'] != 'closed' and get_pay_info.json()[trade_type][
-                    'status'] != 'time_cancel' and get_pay_info.json()[trade_type]['status'] != 'cancel' and \
-                    get_pay_info.json()[trade_type]['status'] != 'canceled'  :
+                if (get_pay_info.status_code == 200):
+                    if (not get_pay_info.json()[trade_type]['agent'] or str(
+                            get_pay_info.json()[trade_type]['agent']) == str(
+                        call.from_user.id)) and \
+                            get_pay_info.json()[trade_type]['status'] != 'closed' and get_pay_info.json()[trade_type][
+                        'status'] != 'time_cancel' and get_pay_info.json()[trade_type]['status'] != 'cancel' and \
+                        get_pay_info.json()[trade_type]['status'] != 'canceled'  :
 
-                    set_agent_trade = requests.post(URL_DJANGO + f'update/{url_type}/trade/', json=data)
+                        set_agent_trade = requests.post(URL_DJANGO + f'update/{url_type}/trade/', json=data)
 
-                    print(set_agent_trade.status_code)
+                        print(set_agent_trade.status_code)
 
-                    get_current_info = requests.get(URL_DJANGO + f'{url_type}/trade/detail/{trade_id}/')
+                        get_current_info = requests.get(URL_DJANGO + f'{url_type}/trade/detail/{trade_id}/')
 
-                    if str(get_current_info.json()[trade_type]['agent']) == str(call.from_user.id):
-                        try:
-                            messages = select_message_from_database(call.from_user.id)
-                            trade_mas = []
-                            for msg, trade_id_db, in messages:
-                                if msg != call.message.message_id:
-                                    trade_mas.append(trade_id_db)
-                                    try:
-                                        await bot.delete_message(call.from_user.id, msg)
-                                    except Exception as e:
-                                        print(e)
-                                    delete_from_database(call.from_user.id, msg, trade_id_db, url_type)
-                            res_delete = {
-                                'id': trade_mas,
-                                'tg_id': call.from_user.id
-                            }
+                        if str(get_current_info.json()[trade_type]['agent']) == str(call.from_user.id):
                             try:
-                                req = requests.post(URL_DJANGO + f'delete/{url_type}/recipient/', json=res_delete)
+                                messages = select_message_from_database(call.from_user.id)
+                                trade_mas = []
+                                for msg, trade_id_db, in messages:
+                                    if msg != call.message.message_id:
+                                        trade_mas.append(trade_id_db)
+                                        try:
+                                            await bot.delete_message(call.from_user.id, msg)
+                                        except Exception as e:
+                                            print(e)
+                                        delete_from_database(call.from_user.id, msg, trade_id_db, url_type)
+                                res_delete = {
+                                    'id': trade_mas,
+                                    'tg_id': call.from_user.id
+                                }
+                                try:
+                                    req = requests.post(URL_DJANGO + f'delete/{url_type}/recipient/', json=res_delete)
+                                except Exception as e:
+                                    print(e)
+                                await call.answer('Вы успешно взяли заявку в работу!', show_alert=True)
+                                msg = await call.message.edit_text(f'''
+
+    Заявка: {get_current_info.json()[trade_type]['platform_id']}
+    Инструмент: {paymethod[get_current_info.json()[trade_type]['paymethod']]}
+    –––
+    Адресат: {get_current_info.json()[trade_type]['card_number']}
+    –––
+    Статус: *заявка за вами, пришлите номер карточки в чат, чтобы продолжить.*
+
+                ''', parse_mode='Markdown')
+                                if url_type == 'kf':
+                                    type = 'kf'
+                                elif url_type == 'gar':
+                                    type = 'garantex'
+                                elif url_type == 'pay':
+                                    type = 'googleSheets'
+                                elif url_type == 'bz':
+                                    type = 'bz'
+                                print(trade_id, type)
+                                await state.update_data(id=trade_id, type=type, message_id=msg.message_id,
+                                                        url_type=url_type, trade_type=trade_type)
+                                print('[DATA]', await state.get_data())
+                                await Activity.check_card.set()
+
                             except Exception as e:
                                 print(e)
-                            await call.answer('Вы успешно взяли заявку в работу!', show_alert=True)
-                            msg = await call.message.edit_text(f'''
+                                await call.answer('Произошла ошибка, нажмите кнопку заново.')
 
-Заявка: {get_current_info.json()[trade_type]['platform_id']}
-Инструмент: {paymethod[get_current_info.json()[trade_type]['paymethod']]}
-–––
-Адресат: {get_current_info.json()[trade_type]['card_number']}
-–––
-Статус: *заявка за вами, пришлите номер карточки в чат, чтобы продолжить.*
-
-            ''', parse_mode='Markdown')
-                            if url_type == 'kf':
-                                type = 'kf'
-                            elif url_type == 'gar':
-                                type = 'garantex'
-                            elif url_type == 'pay':
-                                type = 'googleSheets'
-                            elif url_type == 'bz':
-                                type = 'bz'
-                            print(trade_id, type)
-                            await state.update_data(id=trade_id, type=type, message_id=msg.message_id,
-                                                    url_type=url_type, trade_type=trade_type)
-                            print('[DATA]', await state.get_data())
-                            await Activity.check_card.set()
-
-                        except Exception as e:
-                            print(e)
-                            await call.answer('Произошла ошибка, нажмите кнопку заново.')
-
+                        else:
+                            await call.answer("Заявка уже в работе", show_alert=True)
+                            await call.message.delete()
                     else:
-                        await call.answer("Заявка уже в работе", show_alert=True)
+                        await call.answer('Заявка уже в работе.', show_alert=True)
                         await call.message.delete()
                 else:
-                    await call.answer('Заявка уже в работе.', show_alert=True)
+                    await call.answer('Произошла ошибка, вероятно заявки не существует.', show_alert=True)
                     await call.message.delete()
         else:
             if r.json()[0]['is_working_now'] == True:

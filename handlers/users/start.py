@@ -28,6 +28,7 @@ from garantexAPI.auth import *
 from garantexAPI.chat import *
 from garantexAPI.trades import *
 from skillpaybot import select_message_from_database, delete_from_database, paymethod
+from keyboards.inline.ikb import courier_kb, dispatcher_kb
 
 trade_cb = CallbackData("trade", "type", "id", "action")
 
@@ -144,14 +145,27 @@ async def bot_start(message: types.Message):
     r = requests.post(URL_DJANGO + 'get_agent_info/', json=body)
     if r.status_code == 200:
         data = r.json()[0]
-        if data['is_instead']:
-            status = 'На смене'
-        else:
-            status = 'Не на смене'
+        if data['role'] == 'operator':
+            if data['is_instead']:
+                status = 'На смене'
+            else:
+                status = 'Не на смене'
 
-        await message.answer(f"""
+            await message.answer(f"""
 Привет, {message.from_user.first_name}! 
 Статус: {status} """, reply_markup=kb_menu_main)
+        elif data['role'] == 'dispatcher':
+             await message.answer(
+                f"CASHIN\nРоль: диспетчер",
+                reply_markup=dispatcher_kb,
+            )
+        elif data['role'] == 'courier':
+            await message.answer(
+                f"CASHIN\nРоль: курьер\nБаланс: {data['account_balance']}",
+                reply_markup=courier_kb,
+                )
+        else:
+            await message.reply(f'Вы не зарегистрированы!')
     else:
         await message.answer(f"""
 У вас нет доступа к боту, обратитесь к администратору.    

@@ -16,13 +16,13 @@ URL_DJANGO = 'http://194.58.92.160:8001/api/'
 #         'status': 'trade_created',
 #     }
 
-for i in range(95, 96):
+for i in range(96, 100):
     trade_info = {
             'tg_account' : '036',
             'id': '036' + '-' + str(i),
             'card_number': "5536914018025316",
             'source': 'TEST',
-            'paymethod': 3547,
+            'paymethod': 443,
             'fio': 'TEST',
             'amount': 12500,
             'comment': '',

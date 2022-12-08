@@ -275,7 +275,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
                     call.from_user.id)) and \
                         get_pay_info.json()[trade_type]['status'] != 'closed' and get_pay_info.json()[trade_type][
                     'status'] != 'time_cancel' and get_pay_info.json()[trade_type]['status'] != 'cancel' and \
-                    get_pay_info.json()[trade_type]['status'] != 'canceled':
+                    get_pay_info.json()[trade_type]['status'] != 'canceled' and get_pay_info.status_code == 200:
 
                     set_agent_trade = requests.post(URL_DJANGO + f'update/{url_type}/trade/', json=data)
 
@@ -344,7 +344,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
             elif not r.json()[0]['active_card']:
                 await call.answer('У вас нет активной карточки! Свяжитесь с диспетчером.', show_alert=True)
     else:
-        await call.answer('Заявки не существует.', show_alert=True)
+        await call.answer('Вы не зарегистрированы.', show_alert=True)
         await call.message.delete()     
 
 @dp.callback_query_handler(trade_cb.filter(action=['back_to_trade']), state=Activity.acceptPayment)

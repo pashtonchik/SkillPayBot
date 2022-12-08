@@ -305,12 +305,12 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
                                 await call.answer('Вы успешно взяли заявку в работу!', show_alert=True)
                                 msg = await call.message.edit_text(f'''
 
-    Заявка: {get_current_info.json()[trade_type]['platform_id']}
-    Инструмент: {paymethod[get_current_info.json()[trade_type]['paymethod']]}
-    –––
-    Адресат: {get_current_info.json()[trade_type]['card_number']}
-    –––
-    Статус: *заявка за вами, пришлите номер карточки в чат, чтобы продолжить.*
+Заявка: {get_current_info.json()[trade_type]['platform_id']}
+Инструмент: {paymethod[get_current_info.json()[trade_type]['paymethod']]}
+–––
+Адресат: {get_current_info.json()[trade_type]['card_number']}
+–––
+Статус: *заявка за вами, пришлите номер карточки в чат, чтобы продолжить.*
 
                 ''', parse_mode='Markdown')
                                 if url_type == 'kf':

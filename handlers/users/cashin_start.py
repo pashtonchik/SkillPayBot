@@ -27,7 +27,7 @@ from keyboards.inline.mainMenu import kb_menu_main, kb_menu_job
 
 
 @dp.message_handler(CommandStart())
-async def bot_start(message: types.Message):
+async def send_cashin_menu(message: types.Message):
     body = {
         'tg_id': message.from_user.id
     }

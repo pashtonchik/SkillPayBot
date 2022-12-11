@@ -12,3 +12,7 @@ class CourierCashOut(StatesGroup):
     input_amount = State()
     confirm = State()
 
+
+class Withdraw(StatesGroup):
+    close_withdraw = State()
+

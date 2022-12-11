@@ -3,7 +3,7 @@ from aiogram.dispatcher.storage import FSMContext
 from keyboards.inline.ikb import confirm_kb, create_ikb, cancel_cb
 from loader import dp, bot
 from settings import URL_DJANGO
-from states.courier_stases import CourierCashin, CourierCashOut
+from states.courier_states import CourierCashin, CourierCashOut
 from aiogram.utils.exceptions import ChatNotFound
 from .cashin_start import send_cashin_menu
 import requests

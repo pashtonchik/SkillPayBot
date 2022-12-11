@@ -4,7 +4,7 @@ from aiogram.dispatcher.filters.builtin import CommandStart
 from loader import dp
 from settings import URL_DJANGO
 from keyboards.inline.ikb import courier_kb, dispatcher_kb
-from keyboards.inline.mainMenu import kb_menu_main, kb_menu_job
+from keyboards.inline.mainMenu import kb_menu_main
 
 
 # @dp.message_handler(commands=['cashin'])
@@ -39,7 +39,6 @@ async def send_cashin_menu(message: types.Message):
                 status = 'На смене'
             else:
                 status = 'Не на смене'
-
             await message.answer(f"""
 Привет, {message.from_user.first_name}! 
 Статус: {status} """, reply_markup=kb_menu_main)

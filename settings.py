@@ -1,4 +1,4 @@
-URL_DJANGO = 'http://127.0.0.1:8000/api/'
+URL_DJANGO = 'http://194.58.92.160:8001/api/'
 URL_BZ = 'https://bitzlato.bz/'
 cheques_kf = '/root/dev/SkillPay-Django/kf/'
 cheques_bz = '/root/dev/SkillPay-Django/bz/'

@@ -26,8 +26,8 @@ async def input_withdraw_amount(callback_query: types.CallbackQuery, state: FSMC
             await callback_query.answer(text='Сначала завершите заявку!', show_alert=True)
             await state.finish()
             # удалить старое сообщение
-        elif not operator_info['income_operator']:
-            await callback_query.answer(text='Ваш баланс для вывода равен нулю!', show_alert=True)
+        elif not operator_info['income_operator'] or float(operator_info['income_operator']) < 0 :
+            await callback_query.answer(text='Вывод недоступен!', show_alert=True)
             # удалить старое сообщение
             await state.finish()
         else:

@@ -164,7 +164,7 @@ async def start_job(call: types.CallbackQuery):
 
     
 
-    msg = await call.message.answer("Обновление баланса🆙", reply_markup=update_balance(data['balance_operator']))
+    msg = await call.message.answer("Обновление баланса🆙", reply_markup=update_balance(data['income_operator']))
     # await bot.delete_message(call.from_user.id, msg.message_id)
 
     messages = select_message_from_database(call.from_user.id)
@@ -215,7 +215,7 @@ async def start_job(call: types.CallbackQuery):
 
     data = json.loads(r.text)[0]
     
-    msg = await call.message.answer("Обновление баланса🆙", reply_markup=update_balance(data['balance_operator']))
+    msg = await call.message.answer("Обновление баланса🆙", reply_markup=update_balance(data['income_operator']))
     # await bot.delete_message(call.from_user.id, msg.message_id)
 
     if r.status_code == 200:
@@ -871,7 +871,7 @@ async def get_photo(message: types.Message, state=FSMContext):
 
                                 data = json.loads(r.text)[0]
                                 
-                                msg = await message.answer("Обновление баланса🆙", reply_markup=update_balance(data['balance_operator']))
+                                msg = await message.answer("Обновление баланса🆙", reply_markup=update_balance(data['income_operator']))
                                 # await bot.delete_message(message.chat.id, msg.message_id)
                             else:
                                 await message.answer('Произошла ошибка, свяжитесь с админом.')

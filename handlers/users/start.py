@@ -851,18 +851,18 @@ async def get_photo(message: types.Message, state=FSMContext):
                                 if (get_agent_info_req.status_code == 200):
                                     agent = get_agent_info_req.json()[0]['user_name']
                                 
-                                await bot.send_message(chat_id=channel_id, text=f"""
-Заявка: {get_current_info.json()[trade_type]['platform_id']}
-Инструмент: {paymethod[get_current_info.json()[trade_type]['paymethod']]}
-–––
-Сумма: {get_current_info.json()[trade_type]['amount']} 
-–––
-Адресат: {get_current_info.json()[trade_type]['card_number']}
-–––
-Оператор: {agent}
-–––
-Статус: успешно оплачена и закрыта
-                                """)
+#                                 await bot.send_message(chat_id=channel_id, text=f"""
+# Заявка: {get_current_info.json()[trade_type]['platform_id']}
+# Инструмент: {paymethod[get_current_info.json()[trade_type]['paymethod']]}
+# –––
+# Сумма: {get_current_info.json()[trade_type]['amount']} 
+# –––
+# Адресат: {get_current_info.json()[trade_type]['card_number']}
+# –––
+# Оператор: {agent}
+# –––
+# Статус: успешно оплачена и закрыта
+#                                 """)
                                 body = {
                                     'tg_id': message.chat.id
                                 }

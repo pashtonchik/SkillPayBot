@@ -42,11 +42,6 @@ def update_balance(balance):
 @dp.message_handler(CommandStart())
 async def send_cashin_menu(message: types.Message):
 
-    button_hi = KeyboardButton(text='Ваш баланс: 2000')
-
-    greet_kb = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=False)
-    greet_kb.add(button_hi)
-    await message.reply("1", reply_markup=greet_kb)
     body = {
         'tg_id': message.chat.id
     }

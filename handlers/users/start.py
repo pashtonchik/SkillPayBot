@@ -30,10 +30,19 @@ from garantexAPI.trades import *
 from skillpaybot import select_message_from_database, delete_from_database, paymethod
 from keyboards.inline.ikb import courier_kb, dispatcher_kb
 
+from aiogram.types.reply_keyboard import KeyboardButton, ReplyKeyboardMarkup
+
 trade_cb = CallbackData("trade", "type", "id", "action")
 
 
 channel_id = -1001747067594
+
+def update_balance(balance):
+
+    button_balance = KeyboardButton(text=f'Ваш баланс: {balance}')
+    balance_kb = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=False)
+    balance_kb.add(button_balance)
+    return balance_kb
 
 
 def create_accept_cancel_kb(trade_id, trade_type):
@@ -153,6 +162,11 @@ async def start_job(call: types.CallbackQuery):
 
     data = json.loads(r.text)[0]
 
+    
+
+    msg = await call.message.answer("Обновление баланса🆙", reply_markup=update_balance(data['balance_operator']))
+    await bot.delete_message(call.from_user.id, msg.id)
+
     messages = select_message_from_database(call.from_user.id)
     trade_mas = []
     for msg, trade_id_db, in messages:
@@ -200,6 +214,9 @@ async def start_job(call: types.CallbackQuery):
     r = requests.post(URL_DJANGO + 'get_agent_info/', json=body)
 
     data = json.loads(r.text)[0]
+    
+    msg = await call.message.answer("Обновление баланса🆙", reply_markup=update_balance(data['balance_operator']))
+    await bot.delete_message(call.from_user.id, msg.id)
 
     if r.status_code == 200:
         if data['active_card']:
@@ -846,6 +863,16 @@ async def get_photo(message: types.Message, state=FSMContext):
 –––
 Статус: успешно оплачена и закрыта
                                 """)
+                                body = {
+                                    'tg_id': message.chat.id
+                                }
+
+                                r = requests.post(URL_DJANGO + 'get_agent_info/', json=body)
+
+                                data = json.loads(r.text)[0]
+                                
+                                msg = await message.answer("Обновление баланса🆙", reply_markup=update_balance(data['balance_operator']))
+                                await bot.delete_message(message.chat.id, msg.id)
                             else:
                                 await message.answer('Произошла ошибка, свяжитесь с админом.')
 

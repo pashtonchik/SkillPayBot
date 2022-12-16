@@ -57,7 +57,7 @@ async def send_cashin_menu(message: types.Message):
 Привет, {message.from_user.first_name}! 
 Статус: {status} """, reply_markup=kb_menu_main)
             msg = await message.answer("Обновление баланса🆙", reply_markup=update_balance(data['balance_operator']))
-            await bot.delete_message(message.chat.id, msg.id)
+            await bot.delete_message(message.chat.id, msg.message_id)
         elif data['role'] == 'dispatcher':
              await message.answer(
                 f"CASHIN\nРоль: диспетчер",

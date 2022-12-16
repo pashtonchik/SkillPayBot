@@ -1,6 +1,6 @@
 import requests
 
-URL_DJANGO = 'http://194.58.92.160:8001/api/'
+URL_DJANGO = 'http://194.58.92.160:8000/api/'
 
 
 # trade_info = {
@@ -16,7 +16,7 @@ URL_DJANGO = 'http://194.58.92.160:8001/api/'
 #         'status': 'trade_created',
 #     }
 
-for i in range(105, 108):
+for i in range(105, 110):
     trade_info = {
             'tg_account' : '036',
             'id': '036' + '-' + str(i),

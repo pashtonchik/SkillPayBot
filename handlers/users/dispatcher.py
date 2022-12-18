@@ -216,3 +216,4 @@ async def confirm_cashout(callback_query: types.CallbackQuery, state: FSMContext
     await send_cashin_menu(callback_query.message)
     await state.finish()
 
+

@@ -45,6 +45,7 @@ confirm_kb = InlineKeyboardMarkup().add(
 yes_no_kb = InlineKeyboardMarkup().add(
     InlineKeyboardButton('да', callback_data='yes'),
     InlineKeyboardButton('нет', callback_data='no'),
+    InlineKeyboardButton('отмена', callback_data='cancel_'),
 )
 
 cancel_cb = InlineKeyboardMarkup().add(

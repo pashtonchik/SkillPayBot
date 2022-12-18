@@ -7,13 +7,14 @@ class CourierCashin(StatesGroup):
     choose_card = State()
     confirm = State()
     confirm_task = State()
+    edit_amount = State()
 
 
 class CourierCashOut(StatesGroup):
     input_amount = State()
     confirm = State()
-
     confirm_task = State()
+    edit_amount = State()
 
 
 class Withdraw(StatesGroup):

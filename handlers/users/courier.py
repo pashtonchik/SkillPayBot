@@ -133,7 +133,8 @@ async def select_operator_cashin(callback_query: types.CallbackQuery, state: FSM
             msg = await bot.edit_message_text(
                 message_id=state_data['msg'],
                 chat_id=state_data['id'],
-                text=f'Операция: кэшин \nОператор: {operator["user_name"]} \nКарта: {cur_card["card_number"]} \nСумма: {state_data["amount"]} \nКарта: ************{cur_card["card_number"][-4:]}',
+                text=f'Операция: кэшин \nОператор: {operator["user_name"]}\nСумма: {state_data["amount"]} \
+                    \nКарта: ************{cur_card["card_number"][-4:]}',
                 reply_markup=confirm_kb,
             )
             await state.update_data(
@@ -253,7 +254,7 @@ async def confirm_cashout(callback_query: types.CallbackQuery, state: FSMContext
 async def accept_cashout_task(callback_query: types.CallbackQuery, state: FSMContext):
     amount = parce_accept_ikb(callback_query.data)[0]
     await CourierCashOut.confirm_task.set()
-    await state.set_data({'amount': amount, 'id': callback_query.message.chat.id, 'msg': callback_query.message.message_id})
+    await state.set_data({'amount': amount, 'first_amount':amount, 'id': callback_query.message.chat.id, 'msg': callback_query.message.message_id})
     await callback_query.message.edit_text(f'Забор наличных средств из Gatantex\n{amount}\n_________________________\nСумма введена правильно?',
                                            reply_markup=yes_no_kb)
 
@@ -263,14 +264,57 @@ async def confirm_cashout_task(callback_query: types.CallbackQuery, state: FSMCo
     await confirm_cashout(callback_query, state)
 
 
-@dp.callback_query_handler(text='no', state=CourierCashOut.confirm_task)
+@dp.callback_query_handler(text='cancel_', state=CourierCashOut.confirm_task)
 async def cancel_cashout_task(callback_query: types.CallbackQuery, state: FSMContext):
     data = await state.get_data()
     await callback_query.message.edit_text(
-        f"Забор наличных средств из Gatantex\n{data['amount']}",
-        reply_markup=accept_ikb(f'cashout_{data["amount"]}')
+        f"Забор наличных средств из Gatantex\n{data['first_amount']}",
+        reply_markup=accept_ikb(f'cashout_{data["first_amount"]}')
     )
     await state.finish()
+
+@dp.callback_query_handler(text='no', state=CourierCashOut.confirm_task)
+async def select_no_in_cashout_task(callback_query: types.CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    await callback_query.message.edit_text(
+        text =f'Забор наличных средств из Gatantex\n{data["amount"]}\
+        \n_________________________\nВведите корректную сумму')
+    await CourierCashOut.edit_amount.set()
+    await state.update_data({'msg':callback_query.message.message_id, 'id': callback_query.message.chat.id})
+
+@dp.message_handler(state=CourierCashOut.edit_amount)
+async def edit_cashout_task(message: types.Message, state: FSMContext):
+    data =  await state.get_data()
+    try:
+        amount = float(message.text)
+        if amount >= 0:
+                try:
+                    await bot.delete_message(message.chat.id, data['msg'])
+                except MessageToDeleteNotFound:
+                    pass
+        if amount < 0:
+            raise ValueError
+        elif amount == 0:
+            await bot.send_message(
+                chat_id=data['id'],
+                text =f"Забор наличных средств из Gatantex\n{data['first_amount']}",
+                reply_markup=accept_ikb(f'cashout_{data["first_amount"]}')
+                )
+            await state.finish()
+        else:
+            msg = await bot.send_message(
+                chat_id=data['id'],
+                text=f'Забор наличных средств из Gatantex\n{amount}\
+                \n_________________________\nЗаявка корректна?',
+                reply_markup=yes_no_kb
+            )
+            await CourierCashOut.confirm_task.set()
+            await state.update_data({'amount':amount, 'msg': msg.message_id})
+    except ValueError:
+        await CourierCashOut.edit_amount.set()
+        await message.answer('Значение указанно не верно.\nЕсли вы хотите отменить кэшин введите 0')
+
+
 
 
 @dp.callback_query_handler(lambda c: c.data.startswith('accept_cashin'), state=None)
@@ -284,13 +328,14 @@ async def accept_cashin_task(callback_query: types.CallbackQuery, state: FSMCont
         if account_balance >= float(amount):
             await CourierCashin.confirm_task.set()
             msg = await callback_query.message.edit_text(
-                text=f'Операция: кэшин \nОператор: {operator_name} \nКарта: {card_number} \nСумма:{amount}\
+                text=f'Операция: кэшин \nОператор: {operator_name}\nСумма:{amount}\
                     \nКарта: ************{card_number[-4:]}\n_________________________\nПерепроверьте, верна ли заявка?',
                 reply_markup=yes_no_kb,
             )
             await state.update_data({'amount': amount, 'operator_name': operator_name,
                                     'operator': operator_id, 'card_id': card_id, 'msg': callback_query.message.message_id,
-                                    'id': callback_query.message.chat.id, 'card_number': card_number})
+                                    'id': callback_query.message.chat.id, 'card_number': card_number,
+                                    'first_amount':amount})
         else:
             await callback_query.answer('Средств на вашем балансе недостаточно!')
     else:
@@ -309,19 +354,67 @@ async def confirm_cashin_task(callback_query: types.CallbackQuery, state: FSMCon
             await confirm_cashin(callback_query, state)
         else:
             await callback_query.answer('Средств на вашем балансе недостаточно!')
-            await cancel_cashout_task(callback_query, state)
+            await cancel_cashin_task(callback_query, state)
     else:
         await callback_query.message.answer(f'Ошибка при отправке запроса на сервер\nкод ошибки: {req.status_code}')
         await state.finish()
 
 
-@dp.callback_query_handler(text='no', state=CourierCashin.confirm_task)
-async def cancel_cashout_task(callback_query: types.CallbackQuery, state: FSMContext):
+@dp.callback_query_handler(text='cancel_', state=CourierCashin.confirm_task)
+async def cancel_cashin_task(callback_query: types.CallbackQuery, state: FSMContext):
     data = await state.get_data()
     await callback_query.message.edit_text(
-        text=f'Операция: кэшин \nОператор: {data["operator_name"]} \nКарта: {data["card_number"]}\
-             \nСумма: {data["amount"]} \nКарта: ************{data["card_number"][-4:]}',
+        text=f'Операция: кэшин \nОператор: {data["operator_name"]} \
+             \nСумма: {data["first_amount"]} \nКарта: ************{data["card_number"][-4:]}',
         reply_markup=accept_ikb(
-            f"cashin_{data['amount']}_{data['operator_name']}_{data['operator']}_{data['card_number']}_{data['card_id']}")
+            f"cashin_{data['first_amount']}_{data['operator_name']}_{data['operator']}_{data['card_number']}_{data['card_id']}")
     )
     await state.finish()
+
+@dp.callback_query_handler(text='no', state=CourierCashin.confirm_task)
+async def select_no_in_cashin_task(callback_query: types.CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    await callback_query.message.edit_text(text=f'Операция: кэшин \nОператор: {data["operator_name"]} \
+        \nСумма: {data["amount"]} \nКарта: ************{data["card_number"][-4:]}\
+        \n_________________________\nВведите корректную сумму\n(0 чтобы отменить операцию)')
+    await CourierCashin.edit_amount.set()
+    await state.update_data({'msg':callback_query.message.message_id, 'id': callback_query.message.chat.id})
+
+
+@dp.message_handler(state=CourierCashin.edit_amount)
+async def edit_cashin_task(message: types.Message, state: FSMContext):
+    data =  await state.get_data()
+    try:
+        amount = float(message.text)
+        if amount >= 0:
+                try:
+                    await bot.delete_message(message.chat.id, data['msg'])
+                except MessageToDeleteNotFound:
+                    pass
+        if amount < 0:
+            raise ValueError
+        elif amount == 0:
+            await bot.send_message(
+                chat_id=data['id'],
+                text=f'Операция: кэшин \nОператор: {data["operator_name"]} \
+                \nСумма: {data["first_amount"]} \nКарта: ************{data["card_number"][-4:]}',
+                reply_markup=accept_ikb(
+                    f"cashin_{data['first_amount']}_{data['operator_name']}_{data['operator']}_{data['card_number']}_{data['card_id']}"
+                )
+            )
+            await state.finish()
+        else:
+            msg = await bot.send_message(
+                chat_id=data['id'],
+                text=f'Операция: кэшин \nОператор: {data["operator_name"]} \
+                \nСумма: {amount} \nКарта: ************{data["card_number"][-4:]}\
+                \n_________________________\n*Сумма изменена на {amount}\
+                \n_________________________\nЗаявка корректна?\
+                (0 чтобы отменить операцию)',
+                reply_markup=yes_no_kb
+            )
+            await CourierCashin.confirm_task.set()
+            await state.update_data({'amount':amount, 'msg': msg.message_id})
+    except ValueError:
+        await CourierCashin.edit_amount.set()
+        await message.answer('Значение указанно не верно.\nЕсли вы хотите отменить кэшин введите 0')

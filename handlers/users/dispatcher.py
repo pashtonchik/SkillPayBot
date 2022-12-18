@@ -1,6 +1,6 @@
 from aiogram import types
 from aiogram.dispatcher.storage import FSMContext
-from keyboards.inline.ikb import confirm_kb, create_ikb, cancel_cb
+from keyboards.inline.ikb import confirm_kb, create_ikb, cancel_cb, accept_ikb
 from loader import dp, bot
 from settings import URL_DJANGO
 from states.dispatcher_states import DispatcherCashin, DispatcherCashOut
@@ -11,7 +11,7 @@ from .cashin_start import send_cashin_menu
 from aiogram.utils.exceptions import MessageToDeleteNotFound
 
 
-async def notifiy_couriers(text, amount, card_number=None, operator_name=None):
+async def notifiy_couriers(text, amount, card_number=None, operator_name=None, ikb=None):
     r = requests.get(URL_DJANGO + 'courier/').json()
     text_message = f'{text}\nСумма:{amount}'
     if operator_name:
@@ -21,13 +21,14 @@ async def notifiy_couriers(text, amount, card_number=None, operator_name=None):
             try:
                 await bot.send_message(
                     chat_id=courier['tg_id'],
-                    text=text_message
+                    text=text_message,
+                    reply_markup=ikb,
                 )
             except ChatNotFound:
                 pass
 
 
-@dp.callback_query_handler(text='dis_operators', state=None)
+@dp.callback_query_handler(text='dis_operators')
 async def print_operators(callback_query: types.CallbackQuery):
     req = requests.get(URL_DJANGO+'operators/')
     if req.status_code != 200:
@@ -88,6 +89,7 @@ async def input_amount_courier_cashin(call: types.CallbackQuery, state: FSMConte
         cards = requests.get(URL_DJANGO + f'operator/{call.data[4:]}/cards/').json()
         lables = [i['card_number'] for i in cards]
         callbacks = [i['id'] for i in cards]
+        print(f'kartbl: {callbacks}')
         ikb = create_ikb(lables, callbacks)
         msg = await call.message.edit_text(text='Выберите карту оператора', reply_markup=ikb)
         await state.update_data(msg=msg.message_id,
@@ -133,7 +135,8 @@ async def select_operator_cashin_dispatcher(callback_query: types.CallbackQuery,
         await state.update_data(
             operator=operator['tg_id'],
             operator_name=operator["user_name"],
-            card_number=card_number
+            card_number=card_number,
+            card_id=callback_query.data[4:],
         )
         await DispatcherCashin.confirm.set()
         # except Exception as e:
@@ -149,7 +152,8 @@ async def confirm_cashout_dispatcher(callback_query: types.CallbackQuery, state:
         amount=data['amount'],
         operator_name=data['operator_name'],
         card_number=data['card_number'],
-        text='Заявка\nОперация: кэшин'
+        text='Заявка\nОперация: кэшин',
+        ikb=accept_ikb(f"cashin_{data['amount']}_{data['operator_name']}_{data['operator']}_{data['card_number']}_{data['card_id']}")
     )
     await bot.edit_message_text(
         chat_id=data['id'],
@@ -201,7 +205,8 @@ async def confirm_cashout(callback_query: types.CallbackQuery, state: FSMContext
     data = await state.get_data()
     await notifiy_couriers(
         amount=data['amount'],
-        text='Заявка\nОперация: забор наличных средств с Garantex'
+        text='Заявка\nОперация: забор наличных средств с Garantex',
+        ikb=accept_ikb(f'cashout_{data["amount"]}'),
         )
     await bot.edit_message_text(
         chat_id=data['id'],

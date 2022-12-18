@@ -42,6 +42,19 @@ confirm_kb = InlineKeyboardMarkup().add(
     InlineKeyboardButton('отмена', callback_data='ccancel'),
 )
 
+yes_no_kb = InlineKeyboardMarkup().add(
+    InlineKeyboardButton('да', callback_data='yes'),
+    InlineKeyboardButton('нет', callback_data='no'),
+)
+
 cancel_cb = InlineKeyboardMarkup().add(
     InlineKeyboardButton('отмена', callback_data='ccancel'),
 )
+
+def accept_ikb(data):
+    return  InlineKeyboardMarkup().add(
+        InlineKeyboardButton('принять', callback_data=f'accept_{data}')
+    )
+
+def parce_accept_ikb(data):
+    return data[7:].split('_')[1:]

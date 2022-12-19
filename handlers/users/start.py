@@ -37,9 +37,10 @@ trade_cb = CallbackData("trade", "type", "id", "action")
 
 channel_id = -1001747067594
 
-def update_balance(balance):
-
+def update_keyboard(balance, smena):
     button_balance = KeyboardButton(text=f'Ваш баланс: {balance}')
+    button_smena = KeyboardButton(text=smena)
+    button_settings = KeyboardButton(text='Настройки')
     balance_kb = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=False)
     balance_kb.add(button_balance)
     return balance_kb
@@ -124,6 +125,87 @@ def authorization(key, email_bz):
     return {'Authorization': "Bearer " + token}
 
 
+@dp.message_handler(text='Начать смену', state='*')
+async def join_to_job(message: types.Message, state=FSMContext):
+    body = {
+        'tg_id': message.chat.id
+    }
+
+    r = requests.post(URL_DJANGO + 'get_agent_info/', json=body)
+
+    data = json.loads(r.text)[0]
+    
+    # await bot.delete_message(call.from_user.id, msg.message_id)
+
+    if r.status_code == 200:
+        if data['active_card']:
+            if not data['is_instead']:
+                
+                body = {
+                    'tg_id': message.chat.id,
+                    'options': {
+                        'is_working_now': False,
+                        'is_instead': True,
+                    }
+                }
+
+                r = requests.post(URL_DJANGO + 'edit_agent_status/', json=body)
+
+                if r.status_code == 200:
+                    await message.answer("Вы начали смену! Ожидайте заявки.", reply_markup=update_keyboard(data['income_operator'], "Закончить смену"))
+                else:
+                    await message.answer('Не удалось начать смену, свяжитесь с тех. поддержкой.', reply_markup=update_keyboard(data['income_operator'], "Начать смену"))
+            else:
+                await message.answer("Вы и так уже на смене!", reply_markup=update_keyboard(data['income_operator'], "Закончить смену"))
+        else:
+            await message.answer("У вас нет активной карточки! Свяжитесь с диспетчером.", reply_markup=update_keyboard(data['income_operator'], "Начать смену"))
+@dp.message_handler(text='Закончить смену', state='*')
+async def leave_from_job(message: types.Message, state=FSMContext):
+    body = {
+        'tg_id': message.chat.id
+    }
+
+    r = requests.post(URL_DJANGO + 'get_agent_info/', json=body)
+
+    data = json.loads(r.text)[0]
+
+    messages = select_message_from_database(message.chat.id)
+    trade_mas = []
+    for msg, trade_id_db, in messages:
+        trade_mas.append(trade_id_db)
+        try:
+            await bot.delete_message(message.chat.id, msg)
+        except Exception as e:
+            print(e)
+        delete_from_database(message.chat.id, msg, trade_id_db, 'kf')
+    res_delete = {
+        'id': trade_mas,
+        'tg_id': message.chat.id
+    }
+    try:
+        req = requests.post(URL_DJANGO + 'delete/kf/recipient/', json=res_delete)
+    except Exception as e:
+        print(e)
+    if r.status_code == 200:
+        if data['is_instead']:
+            body = {
+                'tg_id': message.chat.id,
+                'options': {
+                    'is_working_now': False,
+                    'is_instead': False,
+                }
+            }
+
+            r = requests.post(URL_DJANGO + 'edit_agent_status/', json=body)
+
+            await message.answer("Вы закончили смену! Заявки больше вам не приходят.", reply_markup=update_keyboard(data['income_operator'], "Начать смену"))
+
+        else:
+            await message.answer("Вы и так уже не на смене!", reply_markup=update_keyboard(data['income_operator'], "Закончить смену"))
+    else:
+        await message.answer('Не удалось выполнить действие, свяжитесь с тех. поддержкой.', reply_markup=update_keyboard(data['income_operator'], "Начать смену"))
+
+
 
 @dp.message_handler(text='/reset', state='*')
 async def reset(message: types.Message, state=FSMContext):
@@ -147,98 +229,98 @@ async def reset(message: types.Message, state=FSMContext):
 
 
 
-@dp.callback_query_handler(text='Смена')
-async def job(call: types.CallbackQuery):
-    await call.message.edit_text('Выберите действие', reply_markup=kb_menu_job)
+@dp.message_handler(text='Настройки', state='*')
+async def job(message: types.Message, state=FSMContext):
+    await message.edit_text('Выберите действие', reply_markup=kb_menu_job)
 
 
-@dp.callback_query_handler(text='Уйти со смены')
-async def start_job(call: types.CallbackQuery):
-    body = {
-        'tg_id': call.from_user.id
-    }
+# @dp.callback_query_handler(text='Уйти со смены')
+# async def start_job(call: types.CallbackQuery):
+#     body = {
+#         'tg_id': call.from_user.id
+#     }
 
-    r = requests.post(URL_DJANGO + 'get_agent_info/', json=body)
+#     r = requests.post(URL_DJANGO + 'get_agent_info/', json=body)
 
-    data = json.loads(r.text)[0]
+#     data = json.loads(r.text)[0]
 
     
 
-    msg = await call.message.answer("Обновление баланса🆙", reply_markup=update_balance(data['income_operator']))
-    # await bot.delete_message(call.from_user.id, msg.message_id)
+#     msg = await call.message.answer("Обновление баланса🆙", reply_markup=update_balance(data['income_operator']))
+#     # await bot.delete_message(call.from_user.id, msg.message_id)
 
-    messages = select_message_from_database(call.from_user.id)
-    trade_mas = []
-    for msg, trade_id_db, in messages:
-        trade_mas.append(trade_id_db)
-        try:
-            await bot.delete_message(call.from_user.id, msg)
-        except Exception as e:
-            print(e)
-        delete_from_database(call.from_user.id, msg, trade_id_db, 'kf')
-    res_delete = {
-        'id': trade_mas,
-        'tg_id': call.from_user.id
-    }
-    try:
-        req = requests.post(URL_DJANGO + 'delete/kf/recipient/', json=res_delete)
-    except Exception as e:
-        print(e)
-    if r.status_code == 200:
-        if data['is_instead']:
-            body = {
-                'tg_id': call.from_user.id,
-                'options': {
-                    'is_working_now': False,
-                    'is_instead': False,
-                }
-            }
+#     messages = select_message_from_database(call.from_user.id)
+#     trade_mas = []
+#     for msg, trade_id_db, in messages:
+#         trade_mas.append(trade_id_db)
+#         try:
+#             await bot.delete_message(call.from_user.id, msg)
+#         except Exception as e:
+#             print(e)
+#         delete_from_database(call.from_user.id, msg, trade_id_db, 'kf')
+#     res_delete = {
+#         'id': trade_mas,
+#         'tg_id': call.from_user.id
+#     }
+#     try:
+#         req = requests.post(URL_DJANGO + 'delete/kf/recipient/', json=res_delete)
+#     except Exception as e:
+#         print(e)
+#     if r.status_code == 200:
+#         if data['is_instead']:
+#             body = {
+#                 'tg_id': call.from_user.id,
+#                 'options': {
+#                     'is_working_now': False,
+#                     'is_instead': False,
+#                 }
+#             }
 
-            r = requests.post(URL_DJANGO + 'edit_agent_status/', json=body)
+#             r = requests.post(URL_DJANGO + 'edit_agent_status/', json=body)
 
-            await call.answer("Вы закончили смену! Заявки больше вам не приходят.", show_alert=True)
+#             await call.answer("Вы закончили смену! Заявки больше вам не приходят.", show_alert=True)
 
-            await call.message.delete()
-        else:
-            await call.answer("Вы и так уже не на смене!", show_alert=True)
-    else:
-        await call.message.answer('Не удалось выполнить действие, свяжитесь с тех. поддержкой.')
+#             await call.message.delete()
+#         else:
+#             await call.answer("Вы и так уже не на смене!", show_alert=True)
+#     else:
+#         await call.message.answer('Не удалось выполнить действие, свяжитесь с тех. поддержкой.')
 
 
-@dp.callback_query_handler(text='Встать на смену')
-async def start_job(call: types.CallbackQuery):
-    body = {
-        'tg_id': call.from_user.id
-    }
+# @dp.callback_query_handler(text='Встать на смену')
+# async def start_job(call: types.CallbackQuery):
+#     body = {
+#         'tg_id': call.from_user.id
+#     }
 
-    r = requests.post(URL_DJANGO + 'get_agent_info/', json=body)
+#     r = requests.post(URL_DJANGO + 'get_agent_info/', json=body)
 
-    data = json.loads(r.text)[0]
+#     data = json.loads(r.text)[0]
     
-    msg = await call.message.answer("Обновление баланса🆙", reply_markup=update_balance(data['income_operator']))
-    # await bot.delete_message(call.from_user.id, msg.message_id)
+#     msg = await call.message.answer("Обновление баланса🆙", reply_markup=update_balance(data['income_operator']))
+#     # await bot.delete_message(call.from_user.id, msg.message_id)
 
-    if r.status_code == 200:
-        if data['active_card']:
-            if not data['is_instead']:
-                body = {
-                    'tg_id': call.from_user.id,
-                    'options': {
-                        'is_working_now': False,
-                        'is_instead': True,
-                    }
-                }
+#     if r.status_code == 200:
+#         if data['active_card']:
+#             if not data['is_instead']:
+#                 body = {
+#                     'tg_id': call.from_user.id,
+#                     'options': {
+#                         'is_working_now': False,
+#                         'is_instead': True,
+#                     }
+#                 }
 
-                r = requests.post(URL_DJANGO + 'edit_agent_status/', json=body)
+#                 r = requests.post(URL_DJANGO + 'edit_agent_status/', json=body)
 
-                if r.status_code == 200:
-                    await call.answer("Вы начали смену! Ожидайте заявки.", show_alert=True)
-                else:
-                    await call.answer('Не удалось начать смену, свяжитесь с тех. поддержкой.', show_alert=True)
-            else:
-                await call.answer("Вы и так уже на смене!", show_alert=True)
-        else:
-            await call.answer("У вас нет активной карточки! Свяжитесь с диспетчером.", show_alert=True)
+#                 if r.status_code == 200:
+#                     await call.answer("Вы начали смену! Ожидайте заявки.", show_alert=True)
+#                 else:
+#                     await call.answer('Не удалось начать смену, свяжитесь с тех. поддержкой.', show_alert=True)
+#             else:
+#                 await call.answer("Вы и так уже на смене!", show_alert=True)
+#         else:
+#             await call.answer("У вас нет активной карточки! Свяжитесь с диспетчером.", show_alert=True)
         
 
 @dp.callback_query_handler(trade_cb.filter(action=['accept_trade']))
@@ -821,13 +903,22 @@ async def get_photo(message: types.Message, state=FSMContext):
                                 'tg_id': message.from_user.id,
                                 'options': {
                                     'is_working_now': False,
-                                    'is_instead': True,
+                                    # 'is_instead': True,
                                 }
                             }
 
                             change_status_agent = requests.post(URL_DJANGO + 'edit_agent_status/', json=body)
 
                             if change_status_agent.status_code == 200:
+                                req_info_agent = requests.post(URL_DJANGO + 'get_agent_info/', json=body)
+
+                                data = json.loads(req_info_agent.text)[0]
+                                if data['is_instead']:
+                                    temp = "Закончить смену"
+                                else:
+                                    temp = "Начать смену"
+                                reply_markup=update_keyboard(data['income_operator'], temp)
+                                
                                 await bot.edit_message_text(chat_id=message.from_user.id, message_id=msg.message_id,
                                                                 text=f'''
 Заявка: {get_current_info.json()[trade_type]['platform_id']}
@@ -839,7 +930,7 @@ async def get_photo(message: types.Message, state=FSMContext):
 –––
 Статус: *успешно оплачена и закрыта*
 
-                    ''', parse_mode='Markdown')
+                    ''', reply_markup=reply_markup, parse_mode='Markdown')
                                 
                                 data = {
                                     "tg_id" : message.from_user.id
@@ -851,27 +942,20 @@ async def get_photo(message: types.Message, state=FSMContext):
                                 if (get_agent_info_req.status_code == 200):
                                     agent = get_agent_info_req.json()[0]['user_name']
                                 
-#                                 await bot.send_message(chat_id=channel_id, text=f"""
-# Заявка: {get_current_info.json()[trade_type]['platform_id']}
-# Инструмент: {paymethod[get_current_info.json()[trade_type]['paymethod']]}
-# –––
-# Сумма: {get_current_info.json()[trade_type]['amount']} 
-# –––
-# Адресат: {get_current_info.json()[trade_type]['card_number']}
-# –––
-# Оператор: {agent}
-# –––
-# Статус: успешно оплачена и закрыта
-#                                 """)
-                                body = {
-                                    'tg_id': message.chat.id
-                                }
+                                await bot.send_message(chat_id=channel_id, text=f"""
+Заявка: {get_current_info.json()[trade_type]['platform_id']}
+Инструмент: {paymethod[get_current_info.json()[trade_type]['paymethod']]}
+–––
+Сумма: {get_current_info.json()[trade_type]['amount']} 
+–––
+Адресат: {get_current_info.json()[trade_type]['card_number']}
+–––
+Оператор: {agent}
+–––
+Статус: успешно оплачена и закрыта
+                                """)
 
-                                r = requests.post(URL_DJANGO + 'get_agent_info/', json=body)
-
-                                data = json.loads(r.text)[0]
-                                
-                                msg = await message.answer("Обновление баланса🆙", reply_markup=update_balance(data['income_operator']))
+                                # msg = await message.answer("Обновление баланса🆙", reply_markup=reply_markup=update_keyboard(data['income_operator'], "Начать смену"))
                                 # await bot.delete_message(message.chat.id, msg.message_id)
                             else:
                                 await message.answer('Произошла ошибка, свяжитесь с админом.')

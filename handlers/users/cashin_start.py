@@ -12,9 +12,10 @@ from aiogram.types import ReplyKeyboardRemove, \
     ReplyKeyboardMarkup, KeyboardButton, \
     InlineKeyboardMarkup, InlineKeyboardButton
 
-def update_balance(balance):
-
+def update_keyboard(balance, smena):
     button_balance = KeyboardButton(text=f'Ваш баланс: {balance}')
+    button_smena = KeyboardButton(text=smena)
+    button_settings = KeyboardButton(text='Настройки')
     balance_kb = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=False)
     balance_kb.add(button_balance)
     return balance_kb
@@ -36,8 +37,8 @@ async def send_cashin_menu(message: types.Message):
                 status = 'Не на смене'
             await message.answer(f"""
 Привет, {message.from_user.first_name}! 
-Статус: {status} """, reply_markup=kb_menu_main)
-            msg = await message.answer("Обновление баланса🆙", reply_markup=update_balance(data['income_operator']))
+Статус: {status} """, reply_markup=update_keyboard)
+            # msg = await message.answer("Обновление баланса🆙", reply_markup=update_balance(data['income_operator']))
             # await bot.delete_message(message.chat.id, msg.message_id)
         elif data['role'] == 'dispatcher':
              await message.answer(

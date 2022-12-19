@@ -2,9 +2,9 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 kb_menu_main = InlineKeyboardMarkup(
     inline_keyboard=[
-        [
-            InlineKeyboardMarkup(text='Смена', callback_data='Смена')
-        ],
+        # [
+        #     InlineKeyboardMarkup(text='Смена', callback_data='Смена')
+        # ],
         [
             InlineKeyboardMarkup(text='Вывод средств', callback_data='Вывод')
         ],

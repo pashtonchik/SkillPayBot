@@ -6,7 +6,7 @@ from settings import URL_DJANGO
 from states.dispatcher_states import DispatcherCashin, DispatcherCashOut
 from aiogram.utils.exceptions import ChatNotFound
 import requests
-from .courier import cancel_cb
+from .courier import cancel_cb, ccansel
 from .cashin_start import send_cashin_menu
 from aiogram.utils.exceptions import MessageToDeleteNotFound
 
@@ -69,7 +69,7 @@ async def input_amount_dispatcher_cashout(message: types.Message, state: FSMCont
         else:
             operators = requests.get(URL_DJANGO+'operators/').json()
             # print(operators)
-            lables = [i['user_name'] for i in operators]
+            lables = [f"{i['user_name']} | {i['active_card']['card_number'][:4]}" for i in operators]
             callbacks = [i['tg_id'] for i in operators]
             ikb = create_ikb(lables, callbacks)
             msg = await message.answer(text='Выберите оператора', reply_markup=ikb)
@@ -83,62 +83,97 @@ async def input_amount_dispatcher_cashout(message: types.Message, state: FSMCont
 
 @dp.callback_query_handler(state=DispatcherCashin.choose_operator)
 async def input_amount_courier_cashin(call: types.CallbackQuery, state: FSMContext):
+    if call.data == 'ikb_cancel':
+        await ccansel(call, state)
+        return None
     state_data = await state.get_data()
     req = requests.get(url=URL_DJANGO + f'user/{call.from_user.id}/')
     if req.status_code == 200:
-        cards = requests.get(URL_DJANGO + f'operator/{call.data[4:]}/cards/').json()
-        lables = [i['card_number'] for i in cards]
-        callbacks = [i['id'] for i in cards]
-        print(f'kartbl: {callbacks}')
-        ikb = create_ikb(lables, callbacks)
-        msg = await call.message.edit_text(text='Выберите карту оператора', reply_markup=ikb)
-        await state.update_data(msg=msg.message_id,
-                                id=msg.chat.id,
+        operator = requests.get(
+            URL_DJANGO + f'operators/{call.data[4:]}/').json()
+        
+        await state.update_data(
                                 amount=state_data['amount'],
                                 operator=call.data[4:],
                                 )
-        # print(call.data)
-        await DispatcherCashin.choose_card.set()
+        try:
+            cur_card =operator['active_card']
+            msg = await bot.edit_message_text(
+                message_id=state_data['msg'],
+                chat_id=state_data['id'],
+                text=f'Операция: кэшин \nОператор: {operator["user_name"]}\nСумма: {state_data["amount"]} \
+                    \nКарта: ************{cur_card["card_number"][-4:]}',
+                reply_markup=confirm_kb,
+            )
+            await state.update_data(
+                operator=operator['tg_id'],
+                operator_name=operator["user_name"],
+                card_id=cur_card['id'],
+                card_number=cur_card["card_number"]
+            )
+            await DispatcherCashin.confirm.set()
+        except Exception as e:
+            await call.message.answer(
+                text='Ошибка на стороне сервера.\n Операция была отменена'
+            )
+            await state.finish()
     else:
         await call.message.answer(f'Ошибка при отправке запроса на сервер\nкод ошибки: {req.status_code}')
         await state.finish()
+    # state_data = await state.get_data()
+    # req = requests.get(url=URL_DJANGO + f'user/{call.from_user.id}/')
+    # if req.status_code == 200:
+    #     cards = requests.get(URL_DJANGO + f'operator/{call.data[4:]}/cards/').json()
+    #     lables = [i['card_number'] for i in cards]
+    #     callbacks = [i['id'] for i in cards]
+    #     print(f'kartbl: {callbacks}')
+    #     ikb = create_ikb(lables, callbacks)
+    #     msg = await call.message.edit_text(text='Выберите карту оператора', reply_markup=ikb)
+    #     await state.update_data(msg=msg.message_id,
+    #                             id=msg.chat.id,
+    #                             amount=state_data['amount'],
+    #                             operator=call.data[4:],
+    #                             )
+        # print(call.data)
+    #     await DispatcherCashin.confirm.set()
+    # else:
+    #     await call.message.answer(f'Ошибка при отправке запроса на сервер\nкод ошибки: {req.status_code}')
+    #     await state.finish()
 
 
-@dp.callback_query_handler(lambda c: c.data.startswith('ikb_'), state=DispatcherCashin.choose_card)
-async def select_operator_cashin_dispatcher(callback_query: types.CallbackQuery, state: FSMContext):
-    state_data = await state.get_data()
-    if callback_query.data == 'ikb_cancel':
-        await bot.edit_message_text(
-            message_id=state_data['msg'],
-            chat_id=state_data['id'],
-            text='Операция отменена'
-        )
-        await state.finish()
-    else:
-        # try:
-        # print(callback_query.data[4:])
-        operator_req = requests.get(URL_DJANGO + f'operators/{state_data["operator"]}/')
-        cards_operators_req = requests.get(URL_DJANGO + f'operator/{state_data["operator"]}/cards/')
-        card_req = requests.get(URL_DJANGO + f'get/card/{callback_query.data[4:]}/')
-        if operator_req.status_code != 200:
-            raise Exception(
-                f'req status code: {operator_req.status_code }')
-        operator = operator_req.json()
-        card_number = card_req.json()['card_number']
+# @dp.callback_query_handler(lambda c: c.data.startswith('ikb_'), state=DispatcherCashin.choose_card)
+# async def select_operator_cashin_dispatcher(callback_query: types.CallbackQuery, state: FSMContext):
+#     state_data = await state.get_data()
+#     if callback_query.data == 'ikb_cancel':
+#         await bot.edit_message_text(
+#             message_id=state_data['msg'],
+#             chat_id=state_data['id'],
+#             text='Операция отменена'
+#         )
+#         await state.finish()
+#     else:
+#         operator_req = requests.get(URL_DJANGO + f'operators/{state_data["operator"]}/')
+#         cards_operators_req = requests.get(URL_DJANGO + f'operator/{state_data["operator"]}/cards/')
+#         card_req = requests.get(URL_DJANGO + f'get/card/{callback_query.data[4:]}/')
+#         if operator_req.status_code != 200:
+#             raise Exception(
+#                 f'req status code: {operator_req.status_code }')
+#         operator = operator_req.json()
+#         card_number = card_req.json()['card_number']
 
-        msg = await bot.edit_message_text(
-            message_id=state_data['msg'],
-            chat_id=state_data['id'],
-            text=f'Операция: кэшин \nОператор: {operator["user_name"]} \nКарта: {card_number} \nСумма: {state_data["amount"]}',
-            reply_markup=confirm_kb,
-        )
-        await state.update_data(
-            operator=operator['tg_id'],
-            operator_name=operator["user_name"],
-            card_number=card_number,
-            card_id=callback_query.data[4:],
-        )
-        await DispatcherCashin.confirm.set()
+#         msg = await bot.edit_message_text(
+#             message_id=state_data['msg'],
+#             chat_id=state_data['id'],
+#             text=f'Операция: кэшин \nОператор: {operator["user_name"]} \nКарта: {card_number} \nСумма: {state_data["amount"]}',
+#             reply_markup=confirm_kb,
+#         )
+#         await state.update_data(
+#             operator=operator['tg_id'],
+#             operator_name=operator["user_name"],
+#             card_number=card_number,
+#             card_id=callback_query.data[4:],
+#         )
+#         await DispatcherCashin.confirm.set()
         # except Exception as e:
         #     await callback_query.message.answer(
         #         text='Ошибка на стороне сервера.\n Операция была отменена'
@@ -155,6 +190,7 @@ async def confirm_cashout_dispatcher(callback_query: types.CallbackQuery, state:
         text='Заявка\nОперация: кэшин',
         ikb=accept_ikb(f"cashin_{data['amount']}_{data['operator_name']}_{data['operator']}_{data['card_number']}_{data['card_id']}")
     )
+    print(f"cashin_{data['amount']}_{data['operator_name']}_{data['operator']}_{data['card_number']}_{data['card_id']}")
     await bot.edit_message_text(
         chat_id=data['id'],
         message_id=data['msg'],

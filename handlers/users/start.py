@@ -1,9 +1,14 @@
 import asyncio
+import os
+
+import environs
 from aiogram import types
 from aiogram.dispatcher.filters.builtin import CommandStart
 from PyPDF2 import PdfFileReader
 
 from pdf2image import convert_from_path
+
+from data.config import CHANNEL_ID
 from states.operator_states import OperatorCheckBalance
 from aiogram.utils.exceptions import MessageToDeleteNotFound
 from keyboards.inline.ikb import cancel_cb
@@ -30,15 +35,13 @@ from loader import bot
 from garantexAPI.auth import *
 from garantexAPI.chat import *
 from garantexAPI.trades import *
-from skillpaybot import select_message_from_database, delete_from_database, paymethod
+from skillpaybot import select_message_from_database, delete_from_database, paymethod, select_data_from_database, \
+    add_to_database
 from keyboards.inline.ikb import courier_kb, dispatcher_kb
 
 from aiogram.types.reply_keyboard import KeyboardButton, ReplyKeyboardMarkup
 
 trade_cb = CallbackData("trade", "type", "id", "action")
-
-
-channel_id = -1001747067594
 
 def update_keyboard(balance, smena):
     button_balance = KeyboardButton(text=f'Ваш баланс: {balance}')
@@ -139,13 +142,13 @@ async def join_to_job(message: types.Message, state=FSMContext):
     r = requests.post(URL_DJANGO + 'get_agent_info/', json=body)
 
     data = json.loads(r.text)[0]
-    
+
     # await bot.delete_message(call.from_user.id, msg.message_id)
 
     if r.status_code == 200:
         if data['active_card']:
             if not data['is_instead'] and data['is_staff']:
-                
+
                 # body = {
                 #     'tg_id': message.chat.id,
                 #     'options': {
@@ -171,17 +174,21 @@ async def join_to_job(message: types.Message, state=FSMContext):
 
                 r = requests.post(URL_DJANGO + 'edit_agent_status/', json=body)
                 if r.status_code == 200:
-                    await message.answer("Вы начали смену! Ожидайте заявки.", reply_markup=update_keyboard(data['income_operator'], "Закончить смену"))
+                    await message.answer("Вы начали смену! Ожидайте заявки.",
+                                         reply_markup=update_keyboard(data['income_operator'], "Закончить смену"))
                 else:
-                    await message.answer('Не удалось начать смену, свяжитесь с тех. поддержкой.', reply_markup=update_keyboard(data['income_operator'], "Начать смену"))
+                    await message.answer('Не удалось начать смену, свяжитесь с тех. поддержкой.',
+                                         reply_markup=update_keyboard(data['income_operator'], "Начать смену"))
             else:
-                await message.answer("Вы и так уже на смене!", reply_markup=update_keyboard(data['income_operator'], "Закончить смену"))
+                await message.answer("Вы и так уже на смене!",
+                                     reply_markup=update_keyboard(data['income_operator'], "Закончить смену"))
         else:
-            await message.answer("У вас нет активной карточки! Свяжитесь с диспетчером.", reply_markup=update_keyboard(data['income_operator'], "Начать смену"))
+            await message.answer("У вас нет активной карточки! Свяжитесь с диспетчером.",
+                                 reply_markup=update_keyboard(data['income_operator'], "Начать смену"))
 
 
 @dp.message_handler(state=OperatorCheckBalance.input_balance)
-async def check_operator_balance(message:types.Message, state:FSMContext):
+async def check_operator_balance(message: types.Message, state: FSMContext):
     state_data = await state.get_data()
     try:
         await bot.delete_message(message.chat.id, state_data['msg'])
@@ -199,31 +206,34 @@ async def check_operator_balance(message:types.Message, state:FSMContext):
             await state.finish()
         elif balance == float(data['active_card']['card_balance']):
             body = {
-                    'tg_id': message.chat.id,
-                    'options': {
-                        # 'is_working_now': False,
-                        'is_instead': True,
-                    }
+                'tg_id': message.chat.id,
+                'options': {
+                    # 'is_working_now': False,
+                    'is_instead': True,
                 }
+            }
 
             r = requests.post(URL_DJANGO + 'edit_agent_status/', json=body)
             if r.status_code == 200:
                 await message.answer(f"""
-Привет, {message.from_user.first_name}! Ты успешно зашел на смену, ожидай заявки.""", 
-    reply_markup=update_keyboard(data['income_operator'], 'Закончить смену'))
+Привет, {message.from_user.first_name}! Ты успешно зашел на смену, ожидай заявки.""",
+                                     reply_markup=update_keyboard(data['income_operator'], 'Закончить смену'))
             else:
                 await message.answer("Не удалось начать смену, свяжитесь с тех. поддержкой")
             # msg = await message.answer("Обновление баланса🆙", reply_markup=update_balance(data['income_operator']))
         else:
-            await message.answer('⛔️ Найдены несоответствия в балансе! ⛔️\nВаш аккаунт будет временно заблокирован, пока вы не обратитесь в службу поддержки\n')
+            await message.answer(
+                '⛔️ Найдены несоответствия в балансе! ⛔️\nВаш аккаунт будет временно заблокирован, пока вы не обратитесь в службу поддержки\n')
         await state.finish()
     except ValueError:
-        await message.answer('Пожалуйста введите корректное значение баланса или отмените операцию', reply_markup=cancel_cb)
+        await message.answer('Пожалуйста введите корректное значение баланса или отмените операцию',
+                             reply_markup=cancel_cb)
     except Exception as e:
         print(e)
         await message.answer('Ошибка на стороне сервера')
         await state.finish()
         print(data)
+
 
 @dp.message_handler(text='Закончить смену', state='*')
 async def leave_from_job(message: types.Message, state=FSMContext):
@@ -264,13 +274,15 @@ async def leave_from_job(message: types.Message, state=FSMContext):
 
             r = requests.post(URL_DJANGO + 'edit_agent_status/', json=body)
 
-            await message.answer("Вы закончили смену! Заявки больше вам не приходят.", reply_markup=update_keyboard(data['income_operator'], "Начать смену"))
+            await message.answer("Вы закончили смену! Заявки больше вам не приходят.",
+                                 reply_markup=update_keyboard(data['income_operator'], "Начать смену"))
 
         else:
-            await message.answer("Вы и так уже не на смене!", reply_markup=update_keyboard(data['income_operator'], "Закончить смену"))
+            await message.answer("Вы и так уже не на смене!",
+                                 reply_markup=update_keyboard(data['income_operator'], "Закончить смену"))
     else:
-        await message.answer('Не удалось выполнить действие, свяжитесь с тех. поддержкой.', reply_markup=update_keyboard(data['income_operator'], "Начать смену"))
-
+        await message.answer('Не удалось выполнить действие, свяжитесь с тех. поддержкой.',
+                             reply_markup=update_keyboard(data['income_operator'], "Начать смену"))
 
 
 @dp.message_handler(text='/reset', state='*')
@@ -294,7 +306,6 @@ async def reset(message: types.Message, state=FSMContext):
     await state.finish()
 
 
-
 @dp.message_handler(text='Настройки', state='*')
 async def job(message: types.Message, state=FSMContext):
     await message.answer('Выберите действие', reply_markup=kb_menu_main)
@@ -310,7 +321,6 @@ async def job(message: types.Message, state=FSMContext):
 
 #     data = json.loads(r.text)[0]
 
-    
 
 #     msg = await call.message.answer("Обновление баланса🆙", reply_markup=update_balance(data['income_operator']))
 #     # await bot.delete_message(call.from_user.id, msg.message_id)
@@ -362,7 +372,7 @@ async def job(message: types.Message, state=FSMContext):
 #     r = requests.post(URL_DJANGO + 'get_agent_info/', json=body)
 
 #     data = json.loads(r.text)[0]
-    
+
 #     msg = await call.message.answer("Обновление баланса🆙", reply_markup=update_balance(data['income_operator']))
 #     # await bot.delete_message(call.from_user.id, msg.message_id)
 
@@ -387,24 +397,99 @@ async def job(message: types.Message, state=FSMContext):
 #                 await call.answer("Вы и так уже на смене!", show_alert=True)
 #         else:
 #             await call.answer("У вас нет активной карточки! Свяжитесь с диспетчером.", show_alert=True)
-        
+
+
+async def waiting_close(trade_id, url_type, trade_type, chat_id, state):
+    flags = {
+        'main_sent': False,
+        'sent_1': False,
+        'sent_3': False,
+        'sent_5': False,
+        'sent_10': False,
+    }
+    while True:
+        print('функция пошла')
+        get_trade_info = requests.get(URL_DJANGO + f'{url_type}/trade/detail/{trade_id}/')
+        print(get_trade_info.status_code)
+        print(select_message_from_database(chat_id))
+        if get_trade_info.status_code == 200:
+            trade_info = get_trade_info.json()
+            print(trade_info[trade_type]['status'])
+            if trade_info[trade_type]['status'] == 'in_progress':
+                print('asdasda')
+                time_create_trade = datetime.datetime.strptime(trade_info[trade_type]['date_create'],
+                                                               "%Y-%m-%dT%H:%M:%S.%f").timestamp()
+                time_now = datetime.datetime.now().timestamp()
+                time_close = float(trade_info[trade_type]['time_close']) * 60
+                print(time_close - time_now + time_create_trade)
+
+                if not flags['main_sent']:
+                    if int((time_close - time_now + time_create_trade) / 60) >= 1:
+                        await bot.send_message(chat_id,
+                                               f'Осталось {int((time_close - time_now + time_create_trade) / 60)} минут(ы), чтобы закрыть заявку!')
+                    else:
+                        await bot.send_message(chat_id, '⚠️Осталось меньше одной минуты!⚠️')
+                    flags['main_sent'] = True
+                    if (time_close - time_now + time_create_trade) < 600:
+                        flags['sent_10'] = True
+                    if (time_close - time_now + time_create_trade) < 300:
+                        flags['sent_5'] = True
+                    if (time_close - time_now + time_create_trade) < 180:
+                        flags['sent_3'] = True
+                    if (time_close - time_now + time_create_trade) < 60:
+                        flags['sent_1'] = True
+
+                if time_close - time_now + time_create_trade <= 0:
+                    data = {
+                        'id': str(trade_id),
+                        'status': 'delete_on_bot',
+                    }
+                    edit_operator = {
+                        'tg_id': chat_id,
+                        'options': {
+                            'is_working_now': False,
+                            'is_instead': False,
+                        }
+                    }
+                    for msg_id, u_id in select_message_from_database(chat_id):
+                        await bot.delete_message(chat_id, msg_id)
+                        delete_from_database(chat_id, msg_id, trade_id, trade_type)
+                    edit_operator_options = requests.post(URL_DJANGO + 'edit_agent_status/', json=edit_operator)
+                    delete_trade_on_bot = requests.post(URL_DJANGO + f'update/{url_type}/trade/', json=data)
+                    await state.finish()
+                    body = {
+                        'tg_id': chat_id,
+                    }
+                    r = requests.post(URL_DJANGO + 'get_agent_info/', json=body)
+                    await bot.send_message(chat_id,
+                                           'Время на закрытие заявки истекло! \nОбратитесь в техподдержку, если вы отправили деньги на указанные реквизиты',
+                                           reply_markup=update_keyboard(data['income_operator'], 'Закончить смену' if data['is_instead'] else 'Начать смену'))
+                elif time_close - time_now + time_create_trade <= 60 and not flags['sent_1'] and flags['main_sent']:
+                    await bot.send_message(chat_id, '⚠️Заявка долго в работе, осталась 1 минута!⚠️')
+                    flags['sent_1'] = True
+                elif time_close - time_now + time_create_trade <= 180 and not flags['sent_3']:
+                    await bot.send_message(chat_id, '⚠️Заявка долго в работе, осталось 3 минуты!⚠️')
+                    flags['sent_3'] = True
+                elif time_close - time_now + time_create_trade <= 300 and not flags['sent_5']:
+                    await bot.send_message(chat_id, '⚠️Заявка долго в работе, осталось 5 минут!⚠️')
+                    flags['sent_5'] = True
+                elif time_close - time_now + time_create_trade <= 600 and not flags['sent_10']:
+                    await bot.send_message(chat_id, '⚠️Заявка долго в работе, осталось 10 минут!⚠️')
+                    flags['sent_10'] = True
+                await asyncio.sleep(5)
+            else:
+                break
+
 
 @dp.callback_query_handler(trade_cb.filter(action=['accept_trade']))
 async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSMContext):
-    
-    
     data = await state.get_data()
     print('[DATA]', data)
     trade_id = callback_data['id']
     body = {
         'tg_id': call.from_user.id
     }
-
     r = requests.post(URL_DJANGO + 'get_agent_info/', json=body)
-    
-    
-
-
     if r.status_code == 200:
         if r.json()[0]['is_working_now'] == False and r.json()[0]['active_card']:
 
@@ -439,7 +524,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
                         call.from_user.id)) and \
                             get_pay_info.json()[trade_type]['status'] != 'closed' and get_pay_info.json()[trade_type][
                         'status'] != 'time_cancel' and get_pay_info.json()[trade_type]['status'] != 'cancel' and \
-                        get_pay_info.json()[trade_type]['status'] != 'canceled'  :
+                            get_pay_info.json()[trade_type]['status'] != 'canceled':
 
                         set_agent_trade = requests.post(URL_DJANGO + f'update/{url_type}/trade/', json=data)
 
@@ -467,6 +552,9 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
                                     req = requests.post(URL_DJANGO + f'delete/{url_type}/recipient/', json=res_delete)
                                 except Exception as e:
                                     print(e)
+                                asyncio.create_task(
+                                    waiting_close(trade_id, url_type, trade_type, call.from_user.id, state))
+                                # await waiting_close(get_current_info.json()[trade_type]['platform_id'], url_type, call.from_user.id)
                                 await call.answer('Вы успешно взяли заявку в работу!', show_alert=True)
                                 msg = await call.message.edit_text(f'''
 
@@ -512,7 +600,8 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
                 await call.answer('У вас нет активной карточки! Свяжитесь с диспетчером.', show_alert=True)
     else:
         await call.answer('Вы не зарегистрированы.', show_alert=True)
-        await call.message.delete()     
+        await call.message.delete()
+
 
 @dp.callback_query_handler(trade_cb.filter(action=['back_to_trade']), state=Activity.acceptPayment)
 async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSMContext):
@@ -558,7 +647,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
                                 await bot.delete_message(call.from_user.id, msg)
                             except Exception as e:
                                 print(e)
-                            delete_from_database(call.from_user.id, msg, trade_id_db, url_type)
+                            # delete_from_database(call.from_user.id, msg, trade_id_db, url_type)
                     res_delete = {
                         'id': trade_mas,
                         'tg_id': call.from_user.id
@@ -602,6 +691,7 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
             await call.answer('Заявка уже в работе.', show_alert=True)
             await call.message.delete()
 
+
 @dp.message_handler(state=Activity.check_card)
 async def check_card(message: types.Message, state=FSMContext):
     data = await state.get_data()
@@ -616,9 +706,12 @@ async def check_card(message: types.Message, state=FSMContext):
 
     try:
         await bot.delete_message(message.chat.id, msg_id)
+        print(msg_id)
     except Exception as e:
         print(e)
-    
+    delete_from_database(message.from_user.id, msg_id, id, url_type)
+    print('udalili')
+
     if (get_current_info.json()[trade_type]['card_number'] == message.text):
         msg = await message.reply(f'''
 Заявка: {get_current_info.json()[trade_type]['platform_id']}
@@ -631,8 +724,10 @@ async def check_card(message: types.Message, state=FSMContext):
 Статус: *заявка за вами, оплачиваем и присылаем чек*
 
     ''', reply_markup=kb_accept_cancel_payment, parse_mode='Markdown')
+        add_to_database(message.from_user.id, msg.message_id, id, trade_type)
+        print('dobavili', msg.message_id)
         await state.update_data(id=id, type=type, message_id=msg.message_id, url_type=url_type,
-                                            trade_type=trade_type)
+                                trade_type=trade_type)
         await Activity.acceptPayment.set()
     else:
         await message.reply(f'''
@@ -645,7 +740,8 @@ async def check_card(message: types.Message, state=FSMContext):
 
     ''', parse_mode='Markdown')
     await state.update_data(id=id, type=type, message_id=msg.message_id, url_type=url_type,
-                                            trade_type=trade_type)
+                            trade_type=trade_type)
+
 
 @dp.callback_query_handler(trade_cb.filter(action=['cancel_payment']), state=Activity.acceptPayment)
 async def accept_cancel(call: types.CallbackQuery, callback_data=dict, state=FSMContext):
@@ -667,8 +763,9 @@ async def accept_cancel(call: types.CallbackQuery, callback_data=dict, state=FSM
 –––
 Статус: *режим отмены, выберите причину*
 ''',
-                                 reply_markup=create_yes_no_kb(callback_data['id'], callback_data['type']),
-                                 parse_mode='Markdown')
+                                       reply_markup=create_yes_no_kb(callback_data['id'], callback_data['type']),
+                                       parse_mode='Markdown')
+
 
 @dp.callback_query_handler(trade_cb.filter(action=['other_reason']), state=Activity.acceptPayment)
 async def other_case_cancel(call: types.CallbackQuery, callback_data=dict, state=FSMContext):
@@ -715,7 +812,7 @@ async def no_balance_cancel(call: types.CallbackQuery, callback_data=dict, state
         'status': 'again_pending' if callback_data['type'] == 'garantex' else 'again_trade_created',
         'agent': None,
     }
-    
+
     update_status = requests.post(URL_DJANGO + f'update/{url_type}/trade/', json=data)
     get_current_info = requests.get(URL_DJANGO + f'{url_type}/trade/detail/{id}/')
 
@@ -787,16 +884,16 @@ async def other_case_cancel(message: types.Message, state=FSMContext):
             'type': "cancel"
         }
         adv_requests = requests.post(f'https://bitzlato.net/api/p2p/trade/{id}', headers=header,
-                                 proxies=proxy, json=data_cancel)
+                                     proxies=proxy, json=data_cancel)
 
     data = {
         'id': str(id),
         'status': 'cancel_by_operator',
-        'comment' : message.text
+        'comment': message.text
     }
 
     update_status = requests.post(URL_DJANGO + f'update/{url_type}/trade/', json=data)
-    
+
     get_current_info = requests.get(URL_DJANGO + f'{url_type}/trade/detail/{id}/')
 
     await message.reply(f'''
@@ -851,11 +948,11 @@ async def get_photo(message: types.Message, state=FSMContext):
 
 ''', parse_mode='Markdown')
 
-        pdf_document = file_name  
-        with open(pdf_document, "rb") as filehandle:  
+        pdf_document = file_name
+        with open(pdf_document, "rb") as filehandle:
             pdf = PdfFileReader(filehandle)
             info = pdf.getDocumentInfo()
-            pages = pdf.getNumPages()   
+            pages = pdf.getNumPages()
             page1 = pdf.getPage(0)
             text = page1.extractText()
             mas = text.replace('-', '').split()
@@ -878,37 +975,35 @@ async def get_photo(message: types.Message, state=FSMContext):
             print('ERROR CHECK', e)
         print(amount, status, card_number, get_current_info.json()['validate_check'])
 
-        
         if (
-            (paymethod[get_current_info.json()[trade_type]['paymethod']] == 'TINK' and 
-            amount in get_current_info.json()[trade_type]['amount'] and 
-            'Успешно' in status  and
-            card_number in get_current_info.json()[trade_type]['card_number'])
-            or 
-            (paymethod[get_current_info.json()[trade_type]['paymethod']] == 'SBER' and 
-            amount in get_current_info.json()[trade_type]['amount'] and 
-            card_number in get_current_info.json()[trade_type]['card_number']) 
-            
-            or not get_current_info.json()['validate_check']):
+                (paymethod[get_current_info.json()[trade_type]['paymethod']] == 'TINK' and
+                 amount in get_current_info.json()[trade_type]['amount'] and
+                 'Успешно' in status and
+                 card_number in get_current_info.json()[trade_type]['card_number'])
+                or
+                (paymethod[get_current_info.json()[trade_type]['paymethod']] == 'SBER' and
+                 amount in get_current_info.json()[trade_type]['amount'] and
+                 card_number in get_current_info.json()[trade_type]['card_number'])
+
+                or not get_current_info.json()['validate_check']):
             data = {
                 'id': id,
                 'cheque': f'{url_type}/{id}_{message.from_user.id}.pdf'
             }
 
             upload = requests.post(URL_DJANGO + f'update/{url_type}/trade/', json=data)
-            
+
             if url_type == 'bz':
                 get_trade_detail = requests.get(URL_DJANGO + f'{url_type}/trade/detail/{id}/')
                 key = get_trade_detail.json()['user']['key']
                 proxy = get_trade_detail.json()['user']['proxy']
                 email = get_trade_detail.json()['user']['email']
-                print(file_name, file_name[0: len(file_name) - 4] +'.jpg')
+                print(file_name, file_name[0: len(file_name) - 4] + '.jpg')
                 pages = convert_from_path(file_name)
-                
-                for i in range(len(pages)):
 
-                    pages[i].save(file_name[0: len(file_name) - 4] +'.jpg', 'JPEG')
-                file_name = file_name[0: len(file_name) - 4] +'.jpg'
+                for i in range(len(pages)):
+                    pages[i].save(file_name[0: len(file_name) - 4] + '.jpg', 'JPEG')
+                file_name = file_name[0: len(file_name) - 4] + '.jpg'
                 send_message = f'https://bitzlato.net/api/p2p/trade/{id}/chat/'
                 headers = authorization(key, email)
                 data_message = {
@@ -930,7 +1025,8 @@ async def get_photo(message: types.Message, state=FSMContext):
 
                 r = requests.post(url, headers=headers, proxies=proxy, files=files)
 
-                headers = authorization(get_trade_detail.json()['user']['key'], get_trade_detail.json()['user']['email'])
+                headers = authorization(get_trade_detail.json()['user']['key'],
+                                        get_trade_detail.json()['user']['email'])
 
                 proxy = get_trade_detail.json()['user']['proxy']
 
@@ -952,7 +1048,7 @@ async def get_photo(message: types.Message, state=FSMContext):
                 files = {'file': open(file_name, 'rb')}
 
                 message_request = requests.post(f'https://garantex.io/api/v2/otc/chats/message',
-                                            headers=header, data=data_garantex, files=files)
+                                                headers=header, data=data_garantex, files=files)
                 jwt = get_jwt(uid=trade_detail['auth']['uid'], private_key=trade_detail['auth']['private_key'])
                 header = {
                     'Authorization': f'Bearer {jwt}'
@@ -964,7 +1060,8 @@ async def get_photo(message: types.Message, state=FSMContext):
                     req = requests.get(URL_DJANGO + f'{url_type}/trade/detail/{id}/')
                     if req.status_code == 200:
                         trade_info = req.json()
-                        if trade_info[trade_type]['status'] == 'confirm_payment' or trade_info[trade_type]['status'] == 'completed':
+                        if trade_info[trade_type]['status'] == 'confirm_payment' or trade_info[trade_type][
+                            'status'] == 'completed':
                             body = {
                                 'tg_id': message.from_user.id,
                                 'options': {
@@ -983,10 +1080,10 @@ async def get_photo(message: types.Message, state=FSMContext):
                                     temp = "Закончить смену"
                                 else:
                                     temp = "Начать смену"
-                                reply_markup=update_keyboard(data['income_operator'], temp)
-                                
+                                reply_markup = update_keyboard(data['income_operator'], temp)
+
                                 await bot.edit_message_text(chat_id=message.from_user.id, message_id=msg.message_id,
-                                                                text=f'''
+                                                            text=f'''
 Заявка: {get_current_info.json()[trade_type]['platform_id']}
 Инструмент: {paymethod[get_current_info.json()[trade_type]['paymethod']]}
 –––
@@ -997,18 +1094,19 @@ async def get_photo(message: types.Message, state=FSMContext):
 Статус: *успешно оплачена и закрыта*
 
                     ''', reply_markup=reply_markup, parse_mode='Markdown')
-                                
+
                                 data = {
-                                    "tg_id" : message.from_user.id
+                                    "tg_id": message.from_user.id
                                 }
 
                                 get_agent_info_req = requests.post(URL_DJANGO + 'get_agent_info/', json=data)
-                                print("BEBRA", get_agent_info_req, get_agent_info_req.json(), message.from_user.id, "LEBRA")
+                                print("BEBRA", get_agent_info_req, get_agent_info_req.json(), message.from_user.id,
+                                      "LEBRA")
                                 agent = ''
                                 if (get_agent_info_req.status_code == 200):
                                     agent = get_agent_info_req.json()[0]['user_name']
-                                
-                                await bot.send_message(chat_id=channel_id, text=f"""
+
+                                await bot.send_message(chat_id=CHANNEL_ID, text=f"""
 Заявка: {get_current_info.json()[trade_type]['platform_id']}
 Инструмент: {paymethod[get_current_info.json()[trade_type]['paymethod']]}
 –––
@@ -1051,7 +1149,7 @@ async def get_photo(message: types.Message, state=FSMContext):
                 except Exception as e:
                     print(e)
             msg = await bot.edit_message_text(chat_id=message.from_user.id, message_id=msg.message_id,
-                                                            text=f'''
+                                              text=f'''
 Заявка: {get_current_info.json()[trade_type]['platform_id']}
 Инструмент: {paymethod[get_current_info.json()[trade_type]['paymethod']]}
 –––
@@ -1067,9 +1165,8 @@ async def get_photo(message: types.Message, state=FSMContext):
             await Activity.acceptPayment.set()
     else:
         await message.reply(text='Вы отправили чек не в том формате, пришлите заново в формате png')
-        
+
 
 @dp.callback_query_handler(text='Назад')
 async def back(call: types.CallbackQuery):
     await call.message.edit_text('Меню', reply_markup=kb_menu_main)
-

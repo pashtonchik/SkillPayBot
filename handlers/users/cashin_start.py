@@ -16,6 +16,7 @@ from aiogram.types import ReplyKeyboardRemove, \
 from aiogram.dispatcher.storage import FSMContext
 from aiogram.utils.exceptions import MessageToDeleteNotFound
 
+
 def update_keyboard(balance, smena):
     button_balance = KeyboardButton(text=f'Ваш баланс: {balance}')
     button_smena = KeyboardButton(text=smena)

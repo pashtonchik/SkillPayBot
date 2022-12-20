@@ -54,6 +54,7 @@ def select_data_from_database(trade_id, type):
     con.close()
     return data
 
+
 def select_message_from_database(u_id):
     con = sqlite3.connect("message.db")
     cur = con.cursor()
@@ -61,7 +62,6 @@ def select_message_from_database(u_id):
     data = cur.fetchall()
     con.close()
     return data
-
 
 
 def select_trades_from_database(type):
@@ -158,8 +158,8 @@ async def check_trades(dp):
                             except Exception as e:
                                 print(e)
                                 continue
-                            finally:
-                                delete_from_database(userId, msgId, trade, 'kf')
+                            # finally:
+                                # delete_from_database(userId, msgId, trade, 'kf')
 
             trades = select_trades_from_database('bz')
             for trade in trades:

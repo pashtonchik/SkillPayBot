@@ -142,7 +142,7 @@ async def join_to_job(message: types.Message, state=FSMContext):
 
     if r.status_code == 200:
         if data['active_card']:
-            if not data['is_instead']:
+            if not data['is_instead'] and data['is_staff']:
                 
                 # body = {
                 #     'tg_id': message.chat.id,
@@ -157,10 +157,21 @@ async def join_to_job(message: types.Message, state=FSMContext):
                     f'Привет, {message.from_user.first_name}!\nПожалуйста введите баланс по текущей карте, для выхода на смену',
                     reply_markup=cancel_cb)
                 await state.set_data({'msg': msg.message_id})
-                # if r.status_code == 200:
-                #     await message.answer("Вы начали смену! Ожидайте заявки.", reply_markup=update_keyboard(data['income_operator'], "Закончить смену"))
-                # else:
-                #     await message.answer('Не удалось начать смену, свяжитесь с тех. поддержкой.', reply_markup=update_keyboard(data['income_operator'], "Начать смену"))
+
+            elif not data['is_instead']:
+                body = {
+                    'tg_id': message.chat.id,
+                    'options': {
+                        # 'is_working_now': False,
+                        'is_instead': True,
+                    }
+                }
+
+                r = requests.post(URL_DJANGO + 'edit_agent_status/', json=body)
+                if r.status_code == 200:
+                    await message.answer("Вы начали смену! Ожидайте заявки.", reply_markup=update_keyboard(data['income_operator'], "Закончить смену"))
+                else:
+                    await message.answer('Не удалось начать смену, свяжитесь с тех. поддержкой.', reply_markup=update_keyboard(data['income_operator'], "Начать смену"))
             else:
                 await message.answer("Вы и так уже на смене!", reply_markup=update_keyboard(data['income_operator'], "Закончить смену"))
         else:

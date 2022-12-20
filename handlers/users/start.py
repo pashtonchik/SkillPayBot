@@ -1106,8 +1106,8 @@ async def get_photo(message: types.Message, state=FSMContext):
 
                             if change_status_agent.status_code == 200:
                                 req_info_agent = requests.post(URL_DJANGO + 'get_agent_info/', json=body)
-
-                                data = json.loads(req_info_agent.text)[0]
+                                print(req_info_agent.json())
+                                data = req_info_agent.json()[0]
                                 if data['is_instead']:
                                     temp = "Закончить смену"
                                 else:

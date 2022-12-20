@@ -285,7 +285,7 @@ async def reset(message: types.Message, state=FSMContext):
 
 @dp.message_handler(text='Настройки', state='*')
 async def job(message: types.Message, state=FSMContext):
-    await message.edit_text('Выберите действие', reply_markup=kb_menu_job)
+    await message.answer('Выберите действие', reply_markup=kb_menu_job)
 
 
 # @dp.callback_query_handler(text='Уйти со смены')

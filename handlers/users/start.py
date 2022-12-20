@@ -198,9 +198,21 @@ async def check_operator_balance(message:types.Message, state:FSMContext):
             await message.answer('У вас нет активной карты.\nОбратитесь в службу поддержки!')
             await state.finish()
         elif balance == float(data['active_card']['card_balance']):
-            await message.answer(f"""
+            body = {
+                    'tg_id': message.chat.id,
+                    'options': {
+                        # 'is_working_now': False,
+                        'is_instead': True,
+                    }
+                }
+
+            r = requests.post(URL_DJANGO + 'edit_agent_status/', json=body)
+            if r.status_code == 200:
+                await message.answer(f"""
 Привет, {message.from_user.first_name}! Ты успешно зашел на смену, ожидай заявки.""", 
     reply_markup=update_keyboard(data['income_operator'], 'Закончить смену'))
+            else:
+                await message.answer("Не удалось начать смену, свяжитесь с тех. поддержкой")
             # msg = await message.answer("Обновление баланса🆙", reply_markup=update_balance(data['income_operator']))
         else:
             await message.answer('⛔️ Найдены несоответствия в балансе! ⛔️\nВаш аккаунт будет временно заблокирован, пока вы не обратитесь в службу поддержки\n')

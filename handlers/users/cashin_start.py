@@ -22,6 +22,8 @@ def update_keyboard(balance, smena):
     button_settings = KeyboardButton(text='Настройки')
     balance_kb = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=False)
     balance_kb.add(button_balance)
+    balance_kb.add(button_smena)
+    balance_kb.add(button_settings)
     return balance_kb
 
 

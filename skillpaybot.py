@@ -4,6 +4,7 @@ import requests
 from aiogram.utils.exceptions import MessageToDeleteNotFound
 
 import middlewares, filters, handlers
+from data.config import CHANNEL_ID
 from loader import dp, bot
 from settings import URL_DJANGO
 from utils.notify_admins import on_startup_notify
@@ -128,10 +129,18 @@ async def check_trades(dp):
             req_django = requests.get(URL_DJANGO + 'trades/active/')
             if req_django.status_code == 200:
                 trades = req_django.json()
-                # print(trades)
+                print(trades)
 
                 for trade in trades:
-
+                    print(trade)
+                    if not trade['data']['channel_message_id']:
+                        t = trade['data']
+                        msg = await bot.send_message(chat_id=CHANNEL_ID, text=f'🆕 {t["platform_id"]} : {paymethod[t["paymethod"]]} : {t["amount"]}')
+                        data_add_message = {
+                            'type': trade['type'],
+                            'channel_message_id': msg.message_id,
+                        }
+                        req_add_message = requests.post(URL_DJANGO + f'add/channel/message/id/{trade["data"]["id"]}/', json=data_add_message)
                     operators = trade['recipients']
                     kb_accept_order = create_button_accept(trade_id=trade['data']['id'],
                                                         trade_type=trade['type'])
@@ -144,13 +153,11 @@ async def check_trades(dp):
             for trade in trades:
                 trade = trade[0]
                 tradeDetail = requests.get(URL_DJANGO + f'kf/trade/detail/{trade}/')
-
                 if tradeDetail.status_code == 200:
                     tradeDetail = tradeDetail.json()
                     data = select_data_from_database(trade_id=trade, type='kf')
                     text = edited_message_text(tradeDetail['kftrade'])
-                    if tradeDetail['kftrade']['agent'] or tradeDetail['kftrade']['status'] == 'closed' or \
-                        tradeDetail['kftrade']['status'] == 'time_cancel':
+                    if tradeDetail['kftrade']['status'] == 'closed' or tradeDetail['kftrade']['status'] == 'time_cancel':
                         for userId, msgId in data:
                             try:
                                 if str(tradeDetail['kftrade']['agent']) != str(userId):
@@ -159,10 +166,13 @@ async def check_trades(dp):
                                 print(e)
                                 continue
                             # finally:
-                                # delete_from_database(userId, msgId, trade, 'kf')
+                            #     delete_from_database(userId, msgId, trade, 'kf')
 
             trades = select_trades_from_database('bz')
             for trade in trades:
+
+
+
                 trade = trade[0]
                 tradeDetail = requests.get(URL_DJANGO + f'bz/trade/detail/{trade}/')
 

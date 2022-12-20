@@ -460,10 +460,18 @@ async def waiting_close(trade_id, url_type, trade_type, chat_id, state):
                     body = {
                         'tg_id': chat_id,
                     }
-                    r = requests.post(URL_DJANGO + 'get_agent_info/', json=body)
+                    r = requests.get(URL_DJANGO + 'get_agent_info/', json=body)
+                    if r.status_code == 200:
+                        data = r.json()
                     await bot.send_message(chat_id,
                                            'Время на закрытие заявки истекло! \nОбратитесь в техподдержку, если вы отправили деньги на указанные реквизиты',
                                            reply_markup=update_keyboard(data['income_operator'], 'Закончить смену' if data['is_instead'] else 'Начать смену'))
+                    t = trade_info[trade_type]
+                    try:
+                        await bot.edit_message_text(chat_id=CHANNEL_ID, message_id=t['channel_message_id'],
+                                                text=f'🔴 {t["platform_id"]} : {paymethod[t["paymethod"]]} : {t["amount"]} : {data["user_name"]} : timeout')
+                    except Exception as e:
+                        print(e)
                 elif time_close - time_now + time_create_trade <= 60 and not flags['sent_1'] and flags['main_sent']:
                     await bot.send_message(chat_id, '⚠️Заявка долго в работе, осталась 1 минута!⚠️')
                     flags['sent_1'] = True
@@ -566,6 +574,13 @@ async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSM
 Статус: *заявка за вами, пришлите номер карточки в чат, чтобы продолжить.*
 
                 ''', parse_mode='Markdown')
+                                t = get_current_info.json()[trade_type]
+                                print(t)
+                                try:
+                                    await bot.edit_message_text(chat_id=CHANNEL_ID, message_id=t['channel_message_id'],
+                                                             text=f'🟡 {t["platform_id"]} : {paymethod[t["paymethod"]]} : {t["amount"]} : @{call.from_user.username}')
+                                except Exception as e:
+                                    print(e)
                                 if url_type == 'kf':
                                     type = 'kf'
                                 elif url_type == 'gar':
@@ -730,7 +745,7 @@ async def check_card(message: types.Message, state=FSMContext):
                                 trade_type=trade_type)
         await Activity.acceptPayment.set()
     else:
-        await message.reply(f'''
+        msg = await message.reply(f'''
 Заявка: {get_current_info.json()[trade_type]['platform_id']}
 Инструмент: {paymethod[get_current_info.json()[trade_type]['paymethod']]}
 –––
@@ -739,6 +754,7 @@ async def check_card(message: types.Message, state=FSMContext):
 Статус: *некорректные реквизиты, введите снова*
 
     ''', parse_mode='Markdown')
+        add_to_database(message.from_user.id, msg.message_id, id, trade_type)
     await state.update_data(id=id, type=type, message_id=msg.message_id, url_type=url_type,
                             trade_type=trade_type)
 
@@ -817,7 +833,7 @@ async def no_balance_cancel(call: types.CallbackQuery, callback_data=dict, state
     get_current_info = requests.get(URL_DJANGO + f'{url_type}/trade/detail/{id}/')
 
     await call.answer("Сделка отменена. Вы сняты со смены, ждите пополнения баланса.", show_alert=True)
-    await call.message.edit_text(f'''
+    msg = await call.message.edit_text(f'''
 Заявка: {get_current_info.json()[trade_type]['platform_id']}
 Инструмент: {paymethod[get_current_info.json()[trade_type]['paymethod']]}
 –––
@@ -828,6 +844,14 @@ async def no_balance_cancel(call: types.CallbackQuery, callback_data=dict, state
 Статус: *заявка отменена из-за нехватки баланса*
                 ''', parse_mode='Markdown')
 
+    for msg_id, trade_id in select_message_from_database(call.from_user.id):
+        delete_from_database(call.message.chat.id, msg_id, id, trade_type)
+    t = get_current_info.json()[trade_type]
+    try:
+        await bot.edit_message_text(chat_id=CHANNEL_ID, message_id=t['channel_message_id'],
+                               text=f'🔴 {t["platform_id"]} : {paymethod[t["paymethod"]]} : {t["amount"]} : @{call.from_user.username} : no balance')
+    except Exception as e:
+        print(e)
     await state.finish()
 
 
@@ -896,7 +920,7 @@ async def other_case_cancel(message: types.Message, state=FSMContext):
 
     get_current_info = requests.get(URL_DJANGO + f'{url_type}/trade/detail/{id}/')
 
-    await message.reply(f'''
+    msg = await message.reply(f'''
 Заявка: {get_current_info.json()[trade_type]['platform_id']}
 Инструмент: {paymethod[get_current_info.json()[trade_type]['paymethod']]}
 –––
@@ -907,7 +931,15 @@ async def other_case_cancel(message: types.Message, state=FSMContext):
 Статус: *заявка отменена из-за проблемы отправки*
 
         ''', parse_mode='Markdown')
-
+    for msg_id, trade_id in select_message_from_database(message.from_user.id):
+        delete_from_database(message.from_user.id, msg_id, id, trade_type)
+    print('udalili', msg.message_id)
+    t = get_current_info.json()[trade_type]
+    try:
+        await bot.edit_message_text(chat_id=CHANNEL_ID, message_id=t['channel_message_id'],
+                               text=f'🔴 {t["platform_id"]} : {paymethod[t["paymethod"]]} : {t["amount"]} : @{message.from_user.username} : reason')
+    except Exception as e:
+        print(e)
     await state.finish()
 
 
@@ -1095,6 +1127,9 @@ async def get_photo(message: types.Message, state=FSMContext):
 
                     ''', reply_markup=reply_markup, parse_mode='Markdown')
 
+                                for msg_id, trade_id in select_message_from_database(message.from_user.id):
+                                    delete_from_database(message.from_user.id, msg_id, id, trade_type)
+
                                 data = {
                                     "tg_id": message.from_user.id
                                 }
@@ -1103,21 +1138,12 @@ async def get_photo(message: types.Message, state=FSMContext):
                                 print("BEBRA", get_agent_info_req, get_agent_info_req.json(), message.from_user.id,
                                       "LEBRA")
                                 agent = ''
-                                if (get_agent_info_req.status_code == 200):
+                                if get_agent_info_req.status_code == 200:
                                     agent = get_agent_info_req.json()[0]['user_name']
 
-                                await bot.send_message(chat_id=CHANNEL_ID, text=f"""
-Заявка: {get_current_info.json()[trade_type]['platform_id']}
-Инструмент: {paymethod[get_current_info.json()[trade_type]['paymethod']]}
-–––
-Сумма: {get_current_info.json()[trade_type]['amount']} 
-–––
-Адресат: {get_current_info.json()[trade_type]['card_number']}
-–––
-Оператор: {agent}
-–––
-Статус: успешно оплачена и закрыта
-                                """)
+                                t = get_current_info.json()[trade_type]
+                                await bot.edit_message_text(chat_id=CHANNEL_ID, message_id=t['channel_message_id'],
+                                                            text=f'🔴 {t["platform_id"]} : {paymethod[t["paymethod"]]} : {t["amount"]} : {data["user_name"]} : timeout')
 
                                 # msg = await message.answer("Обновление баланса🆙", reply_markup=reply_markup=update_keyboard(data['income_operator'], "Начать смену"))
                                 # await bot.delete_message(message.chat.id, msg.message_id)

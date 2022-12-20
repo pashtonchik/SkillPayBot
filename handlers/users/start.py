@@ -845,7 +845,8 @@ async def no_balance_cancel(call: types.CallbackQuery, callback_data=dict, state
                 ''', parse_mode='Markdown')
 
     for msg_id, trade_id in select_message_from_database(call.from_user.id):
-        delete_from_database(call.message.chat.id, msg_id, id, trade_type)
+        if trade_id == id:
+            delete_from_database(call.message.chat.id, msg_id, id, trade_type)
     t = get_current_info.json()[trade_type]
     try:
         await bot.edit_message_text(chat_id=CHANNEL_ID, message_id=t['channel_message_id'],
@@ -932,7 +933,8 @@ async def other_case_cancel(message: types.Message, state=FSMContext):
 
         ''', parse_mode='Markdown')
     for msg_id, trade_id in select_message_from_database(message.from_user.id):
-        delete_from_database(message.from_user.id, msg_id, id, trade_type)
+        if trade_id == id:
+            delete_from_database(message.from_user.id, msg_id, id, trade_type)
     print('udalili', msg.message_id)
     t = get_current_info.json()[trade_type]
     try:
@@ -1131,7 +1133,8 @@ async def get_photo(message: types.Message, state=FSMContext):
                     ''', reply_markup=reply_markup, parse_mode='Markdown')
 
                                 for msg_id, trade_id in select_message_from_database(message.from_user.id):
-                                    delete_from_database(message.from_user.id, msg_id, id, trade_type)
+                                    if trade_id == id:
+                                        delete_from_database(message.from_user.id, msg_id, id, trade_type)
 
                                 data = {
                                     "tg_id": message.from_user.id

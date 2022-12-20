@@ -1096,10 +1096,6 @@ async def get_photo(message: types.Message, state=FSMContext):
                             'status'] == 'completed':
                             body = {
                                 'tg_id': message.from_user.id,
-                                'options': {
-                                    'is_working_now': False,
-                                    # 'is_instead': True,
-                                }
                             }
 
                             change_status_agent = requests.post(URL_DJANGO + 'edit_agent_status/', json=body)

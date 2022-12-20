@@ -1119,7 +1119,7 @@ async def get_photo(message: types.Message, state=FSMContext):
                                 for msg_id, trade_id in select_message_from_database(message.from_user.id):
                                     if trade_id == id:
                                         delete_from_database(message.from_user.id, msg_id, id, trade_type)
-                                #await bot.delete_message(chat_id=message.from_user.id, message_id=msg.message_id)
+                                await bot.delete_message(chat_id=message.from_user.id, message_id=msg.message_id)
                                 # delete_from_database(message.from_user.id, msg_id, id, trade_type)
                                 await bot.send_message(chat_id=message.from_user.id,
                                                             text=f'''
@@ -1150,8 +1150,9 @@ async def get_photo(message: types.Message, state=FSMContext):
                                     agent = get_agent_info_req.json()[0]['user_name']
                                 print(get_current_info.json())
                                 t = get_current_info.json()[trade_type]
-                                # await bot.edit_message_text(chat_id=CHANNEL_ID, message_id=t['channel_message_id'],
-                                #                             text=f'🟢 {t["platform_id"]} : {paymethod[t["paymethod"]]} : {t["amount"]} : {data["user_name"]}')
+                                print('ttttttttttttttttttttttttttt', t)
+                                await bot.edit_message_text(chat_id=CHANNEL_ID, message_id=t['channel_message_id'],
+                                                            text=f'🟢 {t["platform_id"]} : {paymethod[t["paymethod"]]} : {t["amount"]} : {data["user_name"]}')
 
                                 # msg = await message.answer("Обновление баланса🆙", reply_markup=reply_markup=update_keyboard(data['income_operator'], "Начать смену"))
                             else:

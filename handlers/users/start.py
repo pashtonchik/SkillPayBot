@@ -1140,10 +1140,10 @@ async def get_photo(message: types.Message, state=FSMContext):
                                 agent = ''
                                 if get_agent_info_req.status_code == 200:
                                     agent = get_agent_info_req.json()[0]['user_name']
-
-                                t = get_current_info.json()[trade_type]
-                                await bot.edit_message_text(chat_id=CHANNEL_ID, message_id=t['channel_message_id'],
-                                                            text=f'🔴 {t["platform_id"]} : {paymethod[t["paymethod"]]} : {t["amount"]} : {data["user_name"]} : timeout')
+                                print(get_current_info.json())
+                                # t = get_current_info.json()[trade_type]
+                                # await bot.edit_message_text(chat_id=CHANNEL_ID, message_id=t['channel_message_id'],
+                                #                             text=f'🟢 {t["platform_id"]} : {paymethod[t["paymethod"]]} : {t["amount"]} : {data["user_name"]}')
 
                                 # msg = await message.answer("Обновление баланса🆙", reply_markup=reply_markup=update_keyboard(data['income_operator'], "Начать смену"))
                                 # await bot.delete_message(message.chat.id, msg.message_id)

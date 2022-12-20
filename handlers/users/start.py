@@ -1104,6 +1104,9 @@ async def get_photo(message: types.Message, state=FSMContext):
                             change_status_agent = requests.post(URL_DJANGO + 'edit_agent_status/', json=body)
 
                             if change_status_agent.status_code == 200:
+                                body = {
+                                    'tg_id': message.from_user.id,
+                                }
                                 req_info_agent = requests.post(URL_DJANGO + 'get_agent_info/', json=body)
                                 print(req_info_agent.json())
                                 data = req_info_agent.json()[0]

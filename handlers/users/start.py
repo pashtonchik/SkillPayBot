@@ -157,7 +157,7 @@ async def join_to_job(message: types.Message, state=FSMContext):
                     f'Привет, {message.from_user.first_name}!\nПожалуйста введите баланс по текущей карте, для выхода на смену',
                     reply_markup=cancel_cb)
                 await state.set_data({'msg': msg.message_id})
-
+                await OperatorCheckBalance.input_balance.set()
             elif not data['is_instead']:
                 body = {
                     'tg_id': message.chat.id,

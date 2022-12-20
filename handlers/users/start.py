@@ -1152,7 +1152,7 @@ async def get_photo(message: types.Message, state=FSMContext):
                                 t = get_current_info.json()[trade_type]
                                 print('ttttttttttttttttttttttttttt', t)
                                 await bot.edit_message_text(chat_id=CHANNEL_ID, message_id=t['channel_message_id'],
-                                                            text=f'🟢 {t["platform_id"]} : {paymethod[t["paymethod"]]} : {t["amount"]} : {data["user_name"]}')
+                                                            text=f'🟢 {t["platform_id"]} : {paymethod[t["paymethod"]]} : {t["amount"]} : {get_agent_info_req.json()["user_name"]}')
 
                                 # msg = await message.answer("Обновление баланса🆙", reply_markup=reply_markup=update_keyboard(data['income_operator'], "Начать смену"))
                             else:

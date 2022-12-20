@@ -1163,6 +1163,7 @@ async def get_photo(message: types.Message, state=FSMContext):
 
                 except Exception as e:
                     print(e)
+                    await asyncio.sleep(10)
                     continue
         else:
             get_dispatchers = requests.get(URL_DJANGO + 'get/dispatchers/')

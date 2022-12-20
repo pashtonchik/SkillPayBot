@@ -451,9 +451,9 @@ async def waiting_close(trade_id, url_type, trade_type, chat_id, state):
                             'is_instead': False,
                         }
                     }
-                    for msg_id, u_id in select_message_from_database(chat_id):
-                        await bot.delete_message(chat_id, msg_id)
-                        delete_from_database(chat_id, msg_id, trade_id, trade_type)
+                    # for msg_id, u_id in select_message_from_database(chat_id):
+                    #     await bot.delete_message(chat_id, msg_id)
+                    #     delete_from_database(chat_id, msg_id, trade_id, trade_type)
                     edit_operator_options = requests.post(URL_DJANGO + 'edit_agent_status/', json=edit_operator)
                     delete_trade_on_bot = requests.post(URL_DJANGO + f'update/{url_type}/trade/', json=data)
                     await state.finish()

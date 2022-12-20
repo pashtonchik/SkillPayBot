@@ -8,14 +8,7 @@ from aiogram.utils.exceptions import ChatNotFound
 from .cashin_start import send_cashin_menu
 import requests
 from aiogram.utils.exceptions import MessageToDeleteNotFound
-
-
-@dp.callback_query_handler(text='ccancel', state='*')
-async def ccansel(callback_query: types.CallbackQuery, state: FSMContext):
-    await state.finish()
-    await callback_query.message.edit_text('Операция отменена')
-    await send_cashin_menu(callback_query.message)
-
+from .cashin_start import ccansel
 
 async def notify_dispatchers(text, amount, courier, card_number=None, operator_name=None):
     r = requests.get(URL_DJANGO + 'dispatcher/').json()
@@ -193,7 +186,7 @@ async def confirm_cashin(callback_query: types.CallbackQuery, state: FSMContext)
             message_id=data['msg'],
             text=f'Операция: кэшин\nСумма: {data["amount"]}\nОператор: {data["operator_name"]}\n_________________________\nОперация завершена'
         )
-        await send_cashin_menu(callback_query.message)
+        await send_cashin_menu(callback_query.message, state)
     else:
         await callback_query.message.answer(f'Ошибка при отправке запроса на сервер\nкод ошибки: {req.status_code}')
         print(req.text)
@@ -259,7 +252,7 @@ async def confirm_cashout(callback_query: types.CallbackQuery, state: FSMContext
             message_id=data['msg'],
             text=f'Забор наличных средств из Gatantex\n{data["amount"]}\n_________________________\nОперация завершена',
         )
-        await send_cashin_menu(callback_query.message)
+        await send_cashin_menu(callback_query.message, state)
     else:
         await callback_query.message.answer(f'Ошибка при отправке запроса на сервер\nкод ошибки: {req.status_code}')
     await state.finish()

@@ -6,9 +6,10 @@ from settings import URL_DJANGO
 from states.dispatcher_states import DispatcherCashin, DispatcherCashOut
 from aiogram.utils.exceptions import ChatNotFound
 import requests
-from .courier import cancel_cb, ccansel
+from .courier import cancel_cb
 from .cashin_start import send_cashin_menu
 from aiogram.utils.exceptions import MessageToDeleteNotFound
+from .cashin_start import ccansel
 
 
 async def notifiy_couriers(text, amount, card_number=None, operator_name=None, ikb=None):
@@ -65,7 +66,7 @@ async def input_amount_dispatcher_cashout(message: types.Message, state: FSMCont
         elif amount == 0:
             await state.finish()
             await message.answer('Операция отменена')
-            await send_cashin_menu(message)
+            await send_cashin_menu(message, state)
         else:
             operators = requests.get(URL_DJANGO+'operators/').json()
             # print(operators)
@@ -196,7 +197,7 @@ async def confirm_cashout_dispatcher(callback_query: types.CallbackQuery, state:
         message_id=data['msg'],
         text=f'Операция: кэшин\nСумма: {data["amount"]}\nОператор: {data["operator_name"]}\n_________________________\nЗаявка отправлена курьерам.',
     )
-    await send_cashin_menu(callback_query.message)
+    await send_cashin_menu(callback_query.message, state)
     await state.finish()
 
 
@@ -221,7 +222,7 @@ async def input_amount_courier_cashout(message: types.Message, state: FSMContext
         elif amount == 0:
             await state.finish()
             await message.answer('Операция отменена')
-            await send_cashin_menu(message)
+            await send_cashin_menu(message, state)
         else:
             msg = await message.answer(
                 text=f'Подтверждение операции:\n\nЗабор наличных стредств из Garantex\n{amount}',
@@ -249,7 +250,5 @@ async def confirm_cashout(callback_query: types.CallbackQuery, state: FSMContext
         message_id=data['msg'],
         text=f'Заявка о заборе наличных средств из Gatantex\n{data["amount"]}\n_________________________\nЗаявка отправлена курьерам.',
     )
-    await send_cashin_menu(callback_query.message)
+    await send_cashin_menu(callback_query.message, state)
     await state.finish()
-
-

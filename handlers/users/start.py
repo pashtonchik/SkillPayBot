@@ -4,6 +4,9 @@ from aiogram.dispatcher.filters.builtin import CommandStart
 from PyPDF2 import PdfFileReader
 
 from pdf2image import convert_from_path
+from states.operator_states import OperatorCheckBalance
+from aiogram.utils.exceptions import MessageToDeleteNotFound
+from keyboards.inline.ikb import cancel_cb
 
 from garantexAPI.trades import close_trade
 from keyboards.inline.mainMenu import kb_menu_main, kb_menu_job, kb_accept_order
@@ -141,24 +144,62 @@ async def join_to_job(message: types.Message, state=FSMContext):
         if data['active_card']:
             if not data['is_instead']:
                 
-                body = {
-                    'tg_id': message.chat.id,
-                    'options': {
-                        'is_working_now': False,
-                        'is_instead': True,
-                    }
-                }
+                # body = {
+                #     'tg_id': message.chat.id,
+                #     'options': {
+                #         # 'is_working_now': False,
+                #         'is_instead': True,
+                #     }
+                # }
 
-                r = requests.post(URL_DJANGO + 'edit_agent_status/', json=body)
-
-                if r.status_code == 200:
-                    await message.answer("Вы начали смену! Ожидайте заявки.", reply_markup=update_keyboard(data['income_operator'], "Закончить смену"))
-                else:
-                    await message.answer('Не удалось начать смену, свяжитесь с тех. поддержкой.', reply_markup=update_keyboard(data['income_operator'], "Начать смену"))
+                # r = requests.post(URL_DJANGO + 'edit_agent_status/', json=body)
+                msg = await message.answer(
+                    f'Привет, {message.from_user.first_name}!\nПожалуйста введите баланс по текущей карте, для выхода на смену',
+                    reply_markup=cancel_cb)
+                await state.set_data({'msg': msg.message_id})
+                # if r.status_code == 200:
+                #     await message.answer("Вы начали смену! Ожидайте заявки.", reply_markup=update_keyboard(data['income_operator'], "Закончить смену"))
+                # else:
+                #     await message.answer('Не удалось начать смену, свяжитесь с тех. поддержкой.', reply_markup=update_keyboard(data['income_operator'], "Начать смену"))
             else:
                 await message.answer("Вы и так уже на смене!", reply_markup=update_keyboard(data['income_operator'], "Закончить смену"))
         else:
             await message.answer("У вас нет активной карточки! Свяжитесь с диспетчером.", reply_markup=update_keyboard(data['income_operator'], "Начать смену"))
+
+
+@dp.message_handler(state=OperatorCheckBalance.input_balance)
+async def check_operator_balance(message:types.Message, state:FSMContext):
+    state_data = await state.get_data()
+    try:
+        await bot.delete_message(message.chat.id, state_data['msg'])
+    except MessageToDeleteNotFound:
+        pass
+    except KeyError:
+        pass
+    try:
+        balance = float(message.text)
+        if balance < 0:
+            raise ValueError
+        data = requests.get(URL_DJANGO + f'operators/{message.chat.id}/').json()
+        if not data['active_card']:
+            await message.answer('У вас нет активной карты.\nОбратитесь в службу поддержки!')
+            await state.finish()
+        elif balance == float(data['active_card']['card_balance']):
+            await message.answer(f"""
+Привет, {message.from_user.first_name}! Ты успешно зашел на смену, ожидай заявки.""", 
+    reply_markup=update_keyboard(data['income_operator'], 'Закончить смену'))
+            # msg = await message.answer("Обновление баланса🆙", reply_markup=update_balance(data['income_operator']))
+        else:
+            await message.answer('⛔️ Найдены несоответствия в балансе! ⛔️\nВаш аккаунт будет временно заблокирован, пока вы не обратитесь в службу поддержки\n')
+        await state.finish()
+    except ValueError:
+        await message.answer('Пожалуйста введите корректное значение баланса или отмените операцию', reply_markup=cancel_cb)
+    except Exception as e:
+        print(e)
+        await message.answer('Ошибка на стороне сервера')
+        await state.finish()
+        print(data)
+
 @dp.message_handler(text='Закончить смену', state='*')
 async def leave_from_job(message: types.Message, state=FSMContext):
     body = {

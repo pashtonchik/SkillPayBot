@@ -1152,7 +1152,6 @@ async def get_photo(message: types.Message, state=FSMContext):
                                                             text=f'🟢 {t["platform_id"]} : {paymethod[t["paymethod"]]} : {t["amount"]} : {data["user_name"]}')
 
                                 # msg = await message.answer("Обновление баланса🆙", reply_markup=reply_markup=update_keyboard(data['income_operator'], "Начать смену"))
-                                await bot.delete_message(message.chat.id, msg.message_id)
                             else:
                                 await message.answer('Произошла ошибка, свяжитесь с админом.')
 

@@ -1136,9 +1136,12 @@ async def get_photo(message: types.Message, state=FSMContext):
                                     if trade_id == id:
                                         delete_from_database(message.from_user.id, msg_id, id, trade_type)
                                 print('aaaaaaaaaaaaaaaaaaaaaaaaaaa', message.from_user.id)
-                                data = {
-                                    "tg_id": message.from_user.id
-                                }
+                                try:
+                                    data = {
+                                        "tg_id": message.from_user.id
+                                    }
+                                except Exception as e:
+                                    print(e)
 
                                 get_agent_info_req = requests.post(URL_DJANGO + 'get_agent_info/', json=data)
                                 print("BEBRA", get_agent_info_req, get_agent_info_req.json(), message.from_user.id,

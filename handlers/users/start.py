@@ -1119,7 +1119,7 @@ async def get_photo(message: types.Message, state=FSMContext):
                                 for msg_id, trade_id in select_message_from_database(message.from_user.id):
                                     if trade_id == id:
                                         delete_from_database(message.from_user.id, msg_id, id, trade_type)
-                                await bot.delete_message(chat_id=message.from_user.id, message_id=msg.message_id)
+                                #await bot.delete_message(chat_id=message.from_user.id, message_id=msg.message_id)
                                 # delete_from_database(message.from_user.id, msg_id, id, trade_type)
                                 await bot.send_message(chat_id=message.from_user.id,
                                                             text=f'''

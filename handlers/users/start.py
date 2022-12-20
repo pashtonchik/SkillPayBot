@@ -1115,8 +1115,9 @@ async def get_photo(message: types.Message, state=FSMContext):
                                 else:
                                     temp = "Начать смену"
                                 reply_markup = update_keyboard(data['income_operator'], temp)
-
-                                await bot.edit_message_text(chat_id=message.from_user.id, message_id=msg.message_id,
+                                await bot.delete_message(chat_id=message.from_user.id, message_id=msg.message_id)
+                                # delete_from_database(message.from_user.id, msg_id, id, trade_type)
+                                await bot.send_message(chat_id=message.from_user.id,
                                                             text=f'''
 Заявка: {get_current_info.json()[trade_type]['platform_id']}
 Инструмент: {paymethod[get_current_info.json()[trade_type]['paymethod']]}

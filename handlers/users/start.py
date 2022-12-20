@@ -1151,8 +1151,11 @@ async def get_photo(message: types.Message, state=FSMContext):
                                 print(get_current_info.json())
                                 t = get_current_info.json()[trade_type]
                                 print('ttttttttttttttttttttttttttt', t)
-                                await bot.edit_message_text(chat_id=CHANNEL_ID, message_id=t['channel_message_id'],
+                                try:
+                                    await bot.edit_message_text(chat_id=CHANNEL_ID, message_id=t['channel_message_id'],
                                                             text=f'🟢 {t["platform_id"]} : {paymethod[t["paymethod"]]} : {t["amount"]} : {get_agent_info_req.json()["user_name"]}')
+                                except Exception as e:
+                                    print(e)
 
                                 # msg = await message.answer("Обновление баланса🆙", reply_markup=reply_markup=update_keyboard(data['income_operator'], "Начать смену"))
                             else:

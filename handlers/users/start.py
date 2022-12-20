@@ -484,10 +484,9 @@ async def waiting_close(trade_id, url_type, trade_type, chat_id, state):
                 elif time_close - time_now + time_create_trade <= 600 and not flags['sent_10']:
                     await bot.send_message(chat_id, '⚠️Заявка долго в работе, осталось 10 минут!⚠️')
                     flags['sent_10'] = True
-                await asyncio.sleep(5)
             else:
                 break
-
+        await asyncio.sleep(5)
 
 @dp.callback_query_handler(trade_cb.filter(action=['accept_trade']))
 async def accept_order(call: types.CallbackQuery, callback_data: dict, state=FSMContext):

@@ -1117,6 +1117,9 @@ async def get_photo(message: types.Message, state=FSMContext):
                                 else:
                                     temp = "Начать смену"
                                 reply_markup = update_keyboard(data['income_operator'], temp)
+                                for msg_id, trade_id in select_message_from_database(message.from_user.id):
+                                    if trade_id == id:
+                                        delete_from_database(message.from_user.id, msg_id, id, trade_type)
                                 await bot.delete_message(chat_id=message.from_user.id, message_id=msg.message_id)
                                 # delete_from_database(message.from_user.id, msg_id, id, trade_type)
                                 await bot.send_message(chat_id=message.from_user.id,
@@ -1132,9 +1135,6 @@ async def get_photo(message: types.Message, state=FSMContext):
 
                     ''', reply_markup=reply_markup, parse_mode='Markdown')
 
-                                for msg_id, trade_id in select_message_from_database(message.from_user.id):
-                                    if trade_id == id:
-                                        delete_from_database(message.from_user.id, msg_id, id, trade_type)
                                 print('aaaaaaaaaaaaaaaaaaaaaaaaaaa', message.from_user.id)
                                 try:
                                     data = {

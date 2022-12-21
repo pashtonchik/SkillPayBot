@@ -1153,7 +1153,7 @@ async def get_photo(message: types.Message, state=FSMContext):
                                 print('ttttttttttttttttttttttttttt', t)
                                 try:
                                     await bot.edit_message_text(chat_id=CHANNEL_ID, message_id=t['channel_message_id'],
-                                                            text=f'🟢 {t["platform_id"]} : {paymethod[t["paymethod"]]} : {t["amount"]} : {get_agent_info_req.json()["user_name"]}')
+                                                            text=f'🟢 {t["platform_id"]} : {paymethod[t["paymethod"]]} : {t["amount"]} : {agent["user_name"]}')
                                 except Exception as e:
                                     print(e)
 
